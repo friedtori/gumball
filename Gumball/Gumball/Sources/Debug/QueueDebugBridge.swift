@@ -24,6 +24,11 @@ final class AppStatusBridge: ObservableObject {
     @Published var trackAlbum: String? = nil
     @Published var artworkImage: NSImage? = nil
     @Published var lastFMUsername: String? = nil
+    /// nil = loading/unknown, true = loved, false = not loved
+    @Published var isTrackLoved: Bool? = nil
+
+    var loveCurrentTrack: (() async -> Void)? = nil
+    var unloveCurrentTrack: (() async -> Void)? = nil
 
     private init() {}
 }

@@ -2,11 +2,16 @@ import Foundation
 import AppKit
 import os
 
+private enum DefaultsKey {
+    static let sessionKey = "lastfm.sessionKey"
+    static let username   = "lastfm.username"
+}
+
 /// Console-driven desktop auth coordinator:
 /// - auth.getToken
 /// - open browser for user approval
 /// - poll auth.getSession until success (or timeout)
-/// - store session key in Keychain
+/// - store session key in UserDefaults
 final class LastFMAuthCoordinator {
     private let log = Logger(subsystem: "com.gumball.Gumball", category: "LastFMAuth")
     private let client: LastFMClient
@@ -17,23 +22,23 @@ final class LastFMAuthCoordinator {
         self.client = LastFMClient(config: config)
     }
 
-    func loadSessionKey() throws -> String? {
-        try Keychain.getString(service: config.keychainService, account: config.keychainAccount)
+    func loadSessionKey() -> String? {
+        UserDefaults.standard.string(forKey: DefaultsKey.sessionKey)
     }
 
-    func loadUsername() throws -> String? {
-        try Keychain.getString(service: config.keychainService, account: "username")
+    func loadUsername() -> String? {
+        UserDefaults.standard.string(forKey: DefaultsKey.username)
     }
 
-    func clearSession() throws {
-        try Keychain.delete(service: config.keychainService, account: config.keychainAccount)
-        try? Keychain.delete(service: config.keychainService, account: "username")
+    func clearSession() {
+        UserDefaults.standard.removeObject(forKey: DefaultsKey.sessionKey)
+        UserDefaults.standard.removeObject(forKey: DefaultsKey.username)
     }
 
     func ensureSession(interactive: Bool = true) async throws -> String {
-        if let existing = try loadSessionKey(), !existing.isEmpty {
+        if let existing = loadSessionKey(), !existing.isEmpty {
             await cacheUsernameIfNeeded(sessionKey: existing)
-            log.info("Last.fm session key already present in Keychain")
+            log.info("Last.fm session key already present in UserDefaults")
             return existing
         }
 
@@ -50,19 +55,19 @@ final class LastFMAuthCoordinator {
         NSWorkspace.shared.open(url)
 
         let session = try await pollForSession(token: token, timeoutSeconds: 300, intervalSeconds: 5)
-        try Keychain.setString(session.key, service: config.keychainService, account: config.keychainAccount)
-        try? Keychain.setString(session.name, service: config.keychainService, account: "username")
-        log.info("Stored Last.fm session key in Keychain for user=\(session.name, privacy: .public)")
+        UserDefaults.standard.set(session.key, forKey: DefaultsKey.sessionKey)
+        UserDefaults.standard.set(session.name, forKey: DefaultsKey.username)
+        log.info("Stored Last.fm session key for user=\(session.name, privacy: .public)")
         return session.key
     }
 
     private func cacheUsernameIfNeeded(sessionKey: String) async {
-        if let username = try? loadUsername(), !username.isEmpty {
+        if let username = loadUsername(), !username.isEmpty {
             return
         }
         do {
             let username = try await client.getAuthenticatedUsername(sessionKey: sessionKey)
-            try? Keychain.setString(username, service: config.keychainService, account: "username")
+            UserDefaults.standard.set(username, forKey: DefaultsKey.username)
             log.info("Cached Last.fm username for existing session: \(username, privacy: .public)")
         } catch {
             log.notice("Could not cache Last.fm username for existing session: \(String(describing: error), privacy: .public)")
@@ -92,4 +97,3 @@ final class LastFMAuthCoordinator {
         throw LastFMError.sessionPollTimeout
     }
 }
-

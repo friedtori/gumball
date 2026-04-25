@@ -1,6 +1,8 @@
 import Foundation
 import os
 
+private let sessionKeyDefaultsKey = "lastfm.sessionKey"
+
 /// Drains `ScrobbleQueue` in batches of up to 50 via `track.scrobble`.
 /// Retry policy: 11, 16 → `incrementAttempts`. 9 → clears session key, increments attempts, then `onSessionInvalid` (e.g. re-run desktop auth). Other → permanent fail.
 actor ScrobbleFlushService {
@@ -23,10 +25,7 @@ actor ScrobbleFlushService {
     /// Fetches at most 50 pending rows, POSTs one batch, updates queue status.
     func flushIfPossible(queue: ScrobbleQueue) async {
         do {
-            let sessionKey: String? = try Keychain.getString(
-                service: config.keychainService,
-                account: config.keychainAccount
-            )
+            let sessionKey = UserDefaults.standard.string(forKey: sessionKeyDefaultsKey)
             guard let sk = sessionKey, !sk.isEmpty else { return }
 
             let rows = try await queue.fetchPending(limit: 50)
@@ -81,10 +80,7 @@ actor ScrobbleFlushService {
     /// Best-effort Last.fm now-playing ping. Not queued; failures are logged only.
     func updateNowPlaying(_ ping: ScrobbleStateMachine.NowPlayingPing) async {
         do {
-            let sessionKey: String? = try Keychain.getString(
-                service: config.keychainService,
-                account: config.keychainAccount
-            )
+            let sessionKey = UserDefaults.standard.string(forKey: sessionKeyDefaultsKey)
             guard let sk = sessionKey, !sk.isEmpty else { return }
 
             try await client.trackUpdateNowPlaying(
@@ -102,10 +98,7 @@ actor ScrobbleFlushService {
                 switch code {
                 case 9:
                     log.error("Last.fm now-playing invalid session (9); re-auth required: \(message, privacy: .public)")
-                    try? Keychain.delete(
-                        service: config.keychainService,
-                        account: config.keychainAccount
-                    )
+                    UserDefaults.standard.removeObject(forKey: sessionKeyDefaultsKey)
                     onSessionInvalid()
                 case 11, 16:
                     log.notice("Last.fm now-playing temporary failure \(code, privacy: .public): \(message, privacy: .public)")
@@ -127,10 +120,7 @@ actor ScrobbleFlushService {
         switch code {
         case 9: // invalid session
             log.error("Last.fm: invalid session (9); re-auth required: \(message, privacy: .public)")
-            try? Keychain.delete(
-                service: config.keychainService,
-                account: config.keychainAccount
-            )
+            UserDefaults.standard.removeObject(forKey: sessionKeyDefaultsKey)
             onSessionInvalid()
             for r in rows {
                 if r.attempts + 1 >= maxRetryAttempts {

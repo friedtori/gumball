@@ -35,6 +35,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var queue: ScrobbleQueue?
     private var scrobbleFlusher: ScrobbleFlushService?
     private var lastfmConfig: LastFMConfig?
+    private var sourceFilter: ScrobbleSourceFilter?
+    private var loveService: LastFMLoveService?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -53,6 +55,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             let config = LastFMConfig(apiKey: apiKey, sharedSecret: secret)
             self.lastfmConfig = config
+            self.sourceFilter = ScrobbleSourceFilter(client: LastFMClient(config: config))
+            let loveService = LastFMLoveService(config: config)
+            self.loveService = loveService
+            Task { @MainActor in
+                AppStatusBridge.shared.loveCurrentTrack = {
+                    guard let artist = AppStatusBridge.shared.trackArtist,
+                          let track = AppStatusBridge.shared.trackTitle else { return }
+                    AppStatusBridge.shared.isTrackLoved = true
+                    await loveService.love(artist: artist, track: track)
+                }
+                AppStatusBridge.shared.unloveCurrentTrack = {
+                    guard let artist = AppStatusBridge.shared.trackArtist,
+                          let track = AppStatusBridge.shared.trackTitle else { return }
+                    AppStatusBridge.shared.isTrackLoved = false
+                    await loveService.unlove(artist: artist, track: track)
+                }
+            }
             self.scrobbleFlusher = ScrobbleFlushService(
                 config: config,
                 onSessionInvalid: { [weak self] in
@@ -154,7 +173,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         lastfmTask = Task { [weak self] in
             do {
                 _ = try await auth.ensureSession(interactive: true)
-                let username = try? auth.loadUsername()
+                let username = auth.loadUsername()
                 await MainActor.run {
                     AppStatusBridge.shared.authStatus = .authorized
                     AppStatusBridge.shared.lastFMUsername = username
@@ -188,11 +207,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func updateNowPlaying(_ ping: ScrobbleStateMachine.NowPlayingPing) async {
-        guard let scrobbleFlusher else { return }
-        await scrobbleFlusher.updateNowPlaying(ping)
+        await MainActor.run { AppStatusBridge.shared.isTrackLoved = nil }
+
+        if let scrobbleFlusher {
+            await scrobbleFlusher.updateNowPlaying(ping)
+        }
+
+        if let loveService {
+            let loved = await loveService.fetchLovedState(artist: ping.artist, track: ping.track)
+            await MainActor.run { AppStatusBridge.shared.isTrackLoved = loved }
+        }
     }
 
     private func enqueueScrobble(_ scrobble: ScrobbleStateMachine.ScrobbleCandidate) async {
+        if let filter = sourceFilter {
+            guard await filter.isEligible(scrobble) else {
+                log.info("Source filter: dropped '\(scrobble.track, privacy: .public)' by '\(scrobble.artist, privacy: .public)'")
+                return
+            }
+        }
         guard let queue else { return }
         do {
             _ = try await queue.enqueue(scrobble)

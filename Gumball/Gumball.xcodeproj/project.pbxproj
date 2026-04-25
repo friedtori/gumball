@@ -17,11 +17,14 @@
 		8A0D8F262C7E000100000001 /* ScrobbleQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F272C7E000100000001 /* ScrobbleQueue.swift */; };
 		8A0D8F282C7E000100000001 /* LastFMClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F292C7E000100000001 /* LastFMClient.swift */; };
 		8A0D8F2A2C7E000100000001 /* LastFMAuthCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F2B2C7E000100000001 /* LastFMAuthCoordinator.swift */; };
-		8A0D8F2C2C7E000100000001 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F2D2C7E000100000001 /* Keychain.swift */; };
+		8A0D8F422C7E000100000001 /* LastFMLoveService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F412C7E000100000001 /* LastFMLoveService.swift */; };
+
 		8A0D8F302C7E000100000001 /* LastFMTrackScrobble.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F312C7E000100000001 /* LastFMTrackScrobble.swift */; };
 		8A0D8F322C7E000100000001 /* ScrobbleFlushService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F332C7E000100000001 /* ScrobbleFlushService.swift */; };
+		8A0D8F402C7E000100000001 /* ScrobbleSourceFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F3F2C7E000100000001 /* ScrobbleSourceFilter.swift */; };
 		8A0D8F362C7E000100000001 /* QueueDebugBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F372C7E000100000001 /* QueueDebugBridge.swift */; };
 		8A0D8F382C7E000100000001 /* DebugQueueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F392C7E000100000001 /* DebugQueueView.swift */; };
+		8A0D8F3E2C7E000100000001 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F3D2C7E000100000001 /* MenuBarView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,11 +40,14 @@
 		8A0D8F272C7E000100000001 /* ScrobbleQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrobbleQueue.swift; sourceTree = "<group>"; };
 		8A0D8F292C7E000100000001 /* LastFMClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastFMClient.swift; sourceTree = "<group>"; };
 		8A0D8F2B2C7E000100000001 /* LastFMAuthCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastFMAuthCoordinator.swift; sourceTree = "<group>"; };
-		8A0D8F2D2C7E000100000001 /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
+		8A0D8F412C7E000100000001 /* LastFMLoveService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastFMLoveService.swift; sourceTree = "<group>"; };
+
 		8A0D8F312C7E000100000001 /* LastFMTrackScrobble.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastFMTrackScrobble.swift; sourceTree = "<group>"; };
 		8A0D8F332C7E000100000001 /* ScrobbleFlushService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrobbleFlushService.swift; sourceTree = "<group>"; };
+		8A0D8F3F2C7E000100000001 /* ScrobbleSourceFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrobbleSourceFilter.swift; sourceTree = "<group>"; };
 		8A0D8F372C7E000100000001 /* QueueDebugBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueueDebugBridge.swift; sourceTree = "<group>"; };
 		8A0D8F392C7E000100000001 /* DebugQueueView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugQueueView.swift; sourceTree = "<group>"; };
+		8A0D8F3D2C7E000100000001 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -119,6 +125,7 @@
 				8A0D8F242C7E000100000001 /* ScrobbleStateMachine.swift */,
 				8A0D8F272C7E000100000001 /* ScrobbleQueue.swift */,
 				8A0D8F332C7E000100000001 /* ScrobbleFlushService.swift */,
+				8A0D8F3F2C7E000100000001 /* ScrobbleSourceFilter.swift */,
 			);
 			path = Scrobble;
 			sourceTree = "<group>";
@@ -129,6 +136,7 @@
 				8A0D8F292C7E000100000001 /* LastFMClient.swift */,
 				8A0D8F2B2C7E000100000001 /* LastFMAuthCoordinator.swift */,
 				8A0D8F312C7E000100000001 /* LastFMTrackScrobble.swift */,
+				8A0D8F412C7E000100000001 /* LastFMLoveService.swift */,
 			);
 			path = LastFM;
 			sourceTree = "<group>";
@@ -136,7 +144,7 @@
 		8A0D8F2F2C7E000100000001 /* Util */ = {
 			isa = PBXGroup;
 			children = (
-				8A0D8F2D2C7E000100000001 /* Keychain.swift */,
+	
 			);
 			path = Util;
 			sourceTree = "<group>";
@@ -146,6 +154,7 @@
 			children = (
 				8A0D8F372C7E000100000001 /* QueueDebugBridge.swift */,
 				8A0D8F392C7E000100000001 /* DebugQueueView.swift */,
+				8A0D8F3D2C7E000100000001 /* MenuBarView.swift */,
 			);
 			path = Debug;
 			sourceTree = "<group>";
@@ -228,11 +237,14 @@
 				8A0D8F262C7E000100000001 /* ScrobbleQueue.swift in Sources */,
 				8A0D8F282C7E000100000001 /* LastFMClient.swift in Sources */,
 				8A0D8F2A2C7E000100000001 /* LastFMAuthCoordinator.swift in Sources */,
-				8A0D8F2C2C7E000100000001 /* Keychain.swift in Sources */,
+				8A0D8F422C7E000100000001 /* LastFMLoveService.swift in Sources */,
+
 				8A0D8F302C7E000100000001 /* LastFMTrackScrobble.swift in Sources */,
 				8A0D8F322C7E000100000001 /* ScrobbleFlushService.swift in Sources */,
+				8A0D8F402C7E000100000001 /* ScrobbleSourceFilter.swift in Sources */,
 				8A0D8F362C7E000100000001 /* QueueDebugBridge.swift in Sources */,
 				8A0D8F382C7E000100000001 /* DebugQueueView.swift in Sources */,
+				8A0D8F3E2C7E000100000001 /* MenuBarView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

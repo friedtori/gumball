@@ -4,10 +4,6 @@ import CryptoKit
 struct LastFMConfig: Sendable {
     var apiKey: String
     var sharedSecret: String
-
-    /// Keychain service/account used for session key storage.
-    var keychainService: String = "com.gumball.Gumball.lastfm"
-    var keychainAccount: String = "sessionKey"
 }
 
 enum LastFMError: Error, Sendable {
@@ -101,6 +97,53 @@ final class LastFMClient {
             throw LastFMError.invalidResponse
         }
         return name
+    }
+
+    func artistGetInfo(artist: String) async throws -> LastFMArtistInfo {
+        let params: [String: String] = [
+            "method": "artist.getInfo",
+            "artist": artist,
+            "api_key": config.apiKey,
+            "format": "json",
+        ]
+        let url = try makeGETURL(params: params)
+        let data = try await fetch(url: url)
+        let decoded: ArtistInfoResponse
+        do {
+            decoded = try JSONDecoder().decode(ArtistInfoResponse.self, from: data)
+        } catch {
+            throw LastFMError.decodingFailed(Self.debugBody(data))
+        }
+        if let err = decoded.error, let msg = decoded.message {
+            throw LastFMError.apiError(code: err, message: msg)
+        }
+        guard let body = decoded.artist else { throw LastFMError.invalidResponse }
+        return LastFMArtistInfo(name: body.name, playcount: Int(body.playcount) ?? 0)
+    }
+
+    /// Returns true if the track is in the user's loved tracks on Last.fm.
+    /// Requires `username` for the `userloved` field to be populated in the response.
+    func trackGetInfo(artist: String, track: String, username: String) async throws -> Bool {
+        let params: [String: String] = [
+            "method": "track.getInfo",
+            "artist": artist,
+            "track": track,
+            "username": username,
+            "api_key": config.apiKey,
+            "format": "json",
+        ]
+        let url = try makeGETURL(params: params)
+        let data = try await fetch(url: url)
+        let decoded: TrackInfoResponse
+        do {
+            decoded = try JSONDecoder().decode(TrackInfoResponse.self, from: data)
+        } catch {
+            throw LastFMError.decodingFailed(Self.debugBody(data))
+        }
+        if let err = decoded.error, let msg = decoded.message {
+            throw LastFMError.apiError(code: err, message: msg)
+        }
+        return decoded.track?.userloved == "1"
     }
 
     func authURL(token: String) -> URL? {
@@ -209,5 +252,32 @@ private struct UserInfoResponse: Decodable {
 
 private struct LastFMUserInfo: Decodable {
     var name: String
+}
+
+private struct ArtistInfoResponse: Decodable {
+    var artist: ArtistInfoBody?
+    var error: Int?
+    var message: String?
+}
+
+// Last.fm returns numeric fields as strings in artist.getInfo.
+private struct ArtistInfoBody: Decodable {
+    var name: String
+    var playcount: String
+}
+
+struct LastFMArtistInfo: Sendable {
+    var name: String
+    var playcount: Int
+}
+
+private struct TrackInfoResponse: Decodable {
+    var track: TrackInfoBody?
+    var error: Int?
+    var message: String?
+}
+
+private struct TrackInfoBody: Decodable {
+    var userloved: String?  // "0" or "1"
 }
 

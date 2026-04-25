@@ -84,6 +84,30 @@ extension LastFMClient {
         }
     }
 
+    func trackLove(artist: String, track: String, sessionKey: String) async throws {
+        try await postLoveToggle(method: "track.love", artist: artist, track: track, sessionKey: sessionKey)
+    }
+
+    func trackUnlove(artist: String, track: String, sessionKey: String) async throws {
+        try await postLoveToggle(method: "track.unlove", artist: artist, track: track, sessionKey: sessionKey)
+    }
+
+    private func postLoveToggle(method: String, artist: String, track: String, sessionKey: String) async throws {
+        var params: [String: String] = [
+            "method": method,
+            "artist": artist,
+            "track": track,
+            "api_key": config.apiKey,
+            "sk": sessionKey,
+            "format": "json",
+        ]
+        params["api_sig"] = signLastFMRequest(parameters: params)
+        let data = try await postFormURLEncoded(params: params)
+        if let (code, message) = try parseAPIErrorIfPresent(data) {
+            throw LastFMError.apiError(code: code, message: message)
+        }
+    }
+
     // MARK: - HTTP POST (form)
 
     private func postFormURLEncoded(params: [String: String]) async throws -> Data {
