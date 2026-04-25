@@ -21,8 +21,13 @@ final class LastFMAuthCoordinator {
         try Keychain.getString(service: config.keychainService, account: config.keychainAccount)
     }
 
+    func loadUsername() throws -> String? {
+        try Keychain.getString(service: config.keychainService, account: "username")
+    }
+
     func clearSession() throws {
         try Keychain.delete(service: config.keychainService, account: config.keychainAccount)
+        try? Keychain.delete(service: config.keychainService, account: "username")
     }
 
     func ensureSession(interactive: Bool = true) async throws -> String {
@@ -45,6 +50,7 @@ final class LastFMAuthCoordinator {
 
         let session = try await pollForSession(token: token, timeoutSeconds: 300, intervalSeconds: 5)
         try Keychain.setString(session.key, service: config.keychainService, account: config.keychainAccount)
+        try? Keychain.setString(session.name, service: config.keychainService, account: "username")
         log.info("Stored Last.fm session key in Keychain for user=\(session.name, privacy: .public)")
         return session.key
     }

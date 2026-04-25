@@ -154,8 +154,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         lastfmTask = Task { [weak self] in
             do {
                 _ = try await auth.ensureSession(interactive: true)
+                let username = try? auth.loadUsername()
                 await MainActor.run {
                     AppStatusBridge.shared.authStatus = .authorized
+                    AppStatusBridge.shared.lastFMUsername = username
                 }
                 self?.log.info("Last.fm auth OK")
                 await self?.triggerFlush()

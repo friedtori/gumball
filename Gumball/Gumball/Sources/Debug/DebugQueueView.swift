@@ -83,6 +83,20 @@ struct DebugQueueView: View {
     }
 }
 
+/// Last.fm favicon: red rounded rect with white "fm" text.
+private struct LastFMBadge: View {
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 3)
+                .fill(Color(red: 0.835, green: 0.063, blue: 0.027))
+                .frame(width: 18, height: 12)
+            Text("fm")
+                .font(.system(size: 7.5, weight: .black))
+                .foregroundStyle(.white)
+        }
+    }
+}
+
 /// Menu bar pop-over panel.
 struct GumballMenuBarCommands: View {
     @Environment(\.openWindow) private var openWindow
@@ -192,15 +206,7 @@ struct GumballMenuBarCommands: View {
 
     private var statusSection: some View {
         VStack(alignment: .leading, spacing: 5) {
-            Label {
-                Text(status.authStatus.rawValue)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-            } icon: {
-                Image(systemName: authStatusIcon)
-                    .font(.system(size: 11))
-                    .foregroundStyle(authStatusColor)
-            }
+            authStatusRow
             Label {
                 Text("\(status.pendingCount) pending scrobble\(status.pendingCount == 1 ? "" : "s")")
                     .font(.system(size: 12))
@@ -214,6 +220,36 @@ struct GumballMenuBarCommands: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private var authStatusRow: some View {
+        if status.authStatus == .authorized, let username = status.lastFMUsername {
+            Button {
+                if let url = URL(string: "https://www.last.fm/user/\(username)") {
+                    NSWorkspace.shared.open(url)
+                }
+            } label: {
+                Label {
+                    Text("Last.fm connected")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                } icon: {
+                    LastFMBadge()
+                }
+            }
+            .buttonStyle(.plain)
+        } else {
+            Label {
+                Text(status.authStatus.rawValue)
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+            } icon: {
+                Image(systemName: authStatusIcon)
+                    .font(.system(size: 11))
+                    .foregroundStyle(authStatusColor)
+            }
+        }
     }
 
     private var authStatusIcon: String {

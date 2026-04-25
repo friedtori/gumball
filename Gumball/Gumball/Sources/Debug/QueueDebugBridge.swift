@@ -23,6 +23,7 @@ final class AppStatusBridge: ObservableObject {
     @Published var trackArtist: String? = nil
     @Published var trackAlbum: String? = nil
     @Published var artworkImage: NSImage? = nil
+    @Published var lastFMUsername: String? = nil
 
     private init() {}
 }
