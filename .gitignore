@@ -1,0 +1,26 @@
+# macOS
+.DS_Store
+
+# Xcode / SwiftPM
+DerivedData/
+.build/
+*.xccheckout
+*.moved-aside
+*.xcuserstate
+*.xcscmblueprint
+xcuserdata/
+*.hmap
+*.ipa
+*.dSYM.zip
+
+# Swift PM
+.swiftpm/
+
+# Secrets — never commit API keys or certs
+.env
+.env.*
+*.p12
+*.mobileprovision
+
+# Optional: if you rebuild the adapter in CI and copy artifacts in, you can ignore local CMake noise:
+# Gumball/Gumball/Resources/mediaremote-adapter/build/

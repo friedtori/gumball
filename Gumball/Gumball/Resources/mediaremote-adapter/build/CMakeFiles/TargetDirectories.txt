@@ -1,0 +1,4 @@
+/Users/miket/Documents/SwiftSpike/mediaremote-adapter/build/CMakeFiles/MediaRemoteAdapter.dir
+/Users/miket/Documents/SwiftSpike/mediaremote-adapter/build/CMakeFiles/MediaRemoteAdapterTestClient.dir
+/Users/miket/Documents/SwiftSpike/mediaremote-adapter/build/CMakeFiles/edit_cache.dir
+/Users/miket/Documents/SwiftSpike/mediaremote-adapter/build/CMakeFiles/rebuild_cache.dir
