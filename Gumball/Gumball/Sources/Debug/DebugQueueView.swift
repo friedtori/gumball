@@ -83,16 +83,156 @@ struct DebugQueueView: View {
     }
 }
 
-/// Last.fm favicon: red rounded rect with white "fm" text.
 private struct LastFMBadge: View {
+    private static let image: NSImage? = {
+        guard let url = Bundle.main.url(forResource: "last-fm-logo-icon", withExtension: "svg") else {
+            return nil
+        }
+        return NSImage(contentsOf: url)
+    }()
+
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 3)
-                .fill(Color(red: 0.835, green: 0.063, blue: 0.027))
-                .frame(width: 18, height: 12)
-            Text("fm")
-                .font(.system(size: 7.5, weight: .black))
-                .foregroundStyle(.white)
+        if let image = Self.image {
+            Image(nsImage: image)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 18, height: 10)
+        } else {
+            Image(systemName: "link.circle.fill")
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
+private struct LastFMConnectedRow: View {
+    let url: URL?
+    @State private var isHovering = false
+
+    var body: some View {
+        Button {
+            if let url {
+                NSWorkspace.shared.open(url)
+            }
+        } label: {
+            Label {
+                Text("Last.fm connected")
+                    .font(.system(size: 12))
+                    .foregroundStyle(isHovering && url != nil ? .primary : .secondary)
+            } icon: {
+                LastFMBadge()
+            }
+            .padding(.horizontal, 4)
+            .padding(.vertical, 3)
+            .contentShape(RoundedRectangle(cornerRadius: 5))
+        }
+        .buttonStyle(.plain)
+        .disabled(url == nil)
+        .background {
+            RoundedRectangle(cornerRadius: 5)
+                .fill(isHovering && url != nil ? Color.secondary.opacity(0.12) : Color.clear)
+        }
+        .onHover { hovering in
+            isHovering = hovering
+        }
+        .help(url == nil ? "Last.fm username not available yet" : "Open Last.fm profile")
+    }
+}
+
+private struct LastFMMetadataLink: View {
+    enum Role {
+        case title
+        case artist
+        case album
+
+        var font: Font {
+            switch self {
+            case .title: .system(size: 14.3, weight: .semibold)
+            case .artist: .system(size: 13.2)
+            case .album: .system(size: 11)
+            }
+        }
+
+        var normalOpacity: Double {
+            switch self {
+            case .title: 1
+            case .artist: 0.7
+            case .album: 0.5
+            }
+        }
+    }
+
+    let text: String
+    let url: URL?
+    let role: Role
+    var lineLimit: Int = 1
+
+    @State private var isHovering = false
+
+    var body: some View {
+        if let url {
+            Button {
+                NSWorkspace.shared.open(url)
+            } label: {
+                styledText
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 0)
+                    .contentShape(RoundedRectangle(cornerRadius: 5))
+            }
+            .buttonStyle(.plain)
+            .background {
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(isHovering ? Color.secondary.opacity(0.12) : Color.clear)
+            }
+            .onHover { hovering in
+                isHovering = hovering
+            }
+            .help("Open on Last.fm")
+        } else {
+            styledText
+        }
+    }
+
+    private var styledText: some View {
+        Text(text)
+            .font(role.font)
+            .foregroundStyle(.primary)
+            .opacity(isHovering && url != nil ? 1 : role.normalOpacity)
+            .underline(isHovering && url != nil)
+            .lineLimit(lineLimit)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+private struct MenuActionRow: View {
+    let title: String
+    let systemImage: String
+    let action: () -> Void
+
+    @State private var isHovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Label {
+                Text(title)
+                    .font(.system(size: 12))
+                    .foregroundStyle(isHovering ? .primary : .secondary)
+            } icon: {
+                Image(systemName: systemImage)
+                    .font(.system(size: 11))
+                    .foregroundStyle(isHovering ? .primary : .secondary)
+            }
+            .padding(.horizontal, 4)
+            .padding(.vertical, 3)
+            .contentShape(RoundedRectangle(cornerRadius: 5))
+        }
+        .buttonStyle(.plain)
+        .background {
+            RoundedRectangle(cornerRadius: 5)
+                .fill(isHovering ? Color.secondary.opacity(0.12) : Color.clear)
+        }
+        .onHover { hovering in
+            isHovering = hovering
         }
     }
 }
@@ -118,33 +258,39 @@ struct GumballMenuBarCommands: View {
     // MARK: - Now Playing
 
     private var nowPlayingSection: some View {
-        HStack(alignment: .top, spacing: 10) {
+        HStack(alignment: .center, spacing: 10) {
             artworkView
                 .frame(width: 56, height: 56)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
 
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 0) {
                 if let title = status.trackTitle {
-                    Text(title)
-                        .font(.system(size: 13, weight: .semibold))
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
+                    LastFMMetadataLink(
+                        text: title,
+                        url: lastFMTrackURL,
+                        role: .title,
+                        lineLimit: 2
+                    )
                 } else {
                     Text(status.isPlaying ? "Playing" : "Nothing playing")
                         .font(.system(size: 13))
                         .foregroundStyle(.secondary)
                 }
                 if let artist = status.trackArtist {
-                    Text(artist)
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                    LastFMMetadataLink(
+                        text: artist,
+                        url: lastFMArtistURL,
+                        role: .artist
+                    )
+                    .padding(.top, 2)
                 }
                 if let album = status.trackAlbum {
-                    Text(album)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.tertiary)
-                        .lineLimit(1)
+                    LastFMMetadataLink(
+                        text: album,
+                        url: lastFMAlbumURL,
+                        role: .album
+                    )
+                    .padding(.top, 4)
                 }
             }
 
@@ -205,40 +351,29 @@ struct GumballMenuBarCommands: View {
     // MARK: - Status
 
     private var statusSection: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .center, spacing: 5) {
             authStatusRow
-            Label {
-                Text("\(status.pendingCount) pending scrobble\(status.pendingCount == 1 ? "" : "s")")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-            } icon: {
-                Image(systemName: "clock.arrow.circlepath")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
+            if status.pendingCount > 0 {
+                Label {
+                    Text("\(status.pendingCount) pending scrobble\(status.pendingCount == 1 ? "" : "s")")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                } icon: {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 
     @ViewBuilder
     private var authStatusRow: some View {
-        if status.authStatus == .authorized, let username = status.lastFMUsername {
-            Button {
-                if let url = URL(string: "https://www.last.fm/user/\(username)") {
-                    NSWorkspace.shared.open(url)
-                }
-            } label: {
-                Label {
-                    Text("Last.fm connected")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                } icon: {
-                    LastFMBadge()
-                }
-            }
-            .buttonStyle(.plain)
+        if status.authStatus == .authorized {
+            LastFMConnectedRow(url: lastFMProfileURL)
         } else {
             Label {
                 Text(status.authStatus.rawValue)
@@ -250,6 +385,45 @@ struct GumballMenuBarCommands: View {
                     .foregroundStyle(authStatusColor)
             }
         }
+    }
+
+    private var lastFMProfileURL: URL? {
+        guard
+            let username = status.lastFMUsername,
+            let encodedUsername = username.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)
+        else { return nil }
+        return URL(string: "https://www.last.fm/user/\(encodedUsername)")
+    }
+
+    private var lastFMArtistURL: URL? {
+        guard let artist = lastFMPathComponent(status.trackArtist) else { return nil }
+        return URL(string: "https://www.last.fm/music/\(artist)")
+    }
+
+    private var lastFMAlbumURL: URL? {
+        guard
+            let artist = lastFMPathComponent(status.trackArtist),
+            let album = lastFMPathComponent(status.trackAlbum)
+        else { return nil }
+        return URL(string: "https://www.last.fm/music/\(artist)/\(album)")
+    }
+
+    private var lastFMTrackURL: URL? {
+        guard
+            let artist = lastFMPathComponent(status.trackArtist),
+            let track = lastFMPathComponent(status.trackTitle)
+        else { return nil }
+        return URL(string: "https://www.last.fm/music/\(artist)/_/\(track)")
+    }
+
+    private func lastFMPathComponent(_ value: String?) -> String? {
+        guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
+            return nil
+        }
+
+        var allowed = CharacterSet.urlPathAllowed
+        allowed.remove(charactersIn: "/")
+        return trimmed.addingPercentEncoding(withAllowedCharacters: allowed)
     }
 
     private var authStatusIcon: String {
@@ -273,20 +447,18 @@ struct GumballMenuBarCommands: View {
     // MARK: - Actions
 
     private var actionSection: some View {
-        VStack(spacing: 0) {
-            Button("Show queue debug…") {
+        VStack(alignment: .center, spacing: 5) {
+            MenuActionRow(title: "Track History", systemImage: "clock.arrow.circlepath") {
                 NSApp.activate(ignoringOtherApps: true)
                 openWindow(id: "queue-debug")
             }
-            Button("Refresh queue list") {
-                Task { await QueueDebugBridge.shared.refresh() }
-            }
-            .keyboardShortcut("r", modifiers: [.command, .shift])
-            Divider()
-            Button("Quit Gumball") {
+            MenuActionRow(title: "Quit Gumball", systemImage: "power") {
                 NSApplication.shared.terminate(nil)
             }
             .keyboardShortcut("q", modifiers: .command)
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 }

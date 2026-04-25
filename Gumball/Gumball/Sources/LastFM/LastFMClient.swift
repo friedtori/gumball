@@ -77,6 +77,32 @@ final class LastFMClient {
         return session
     }
 
+    func getAuthenticatedUsername(sessionKey: String) async throws -> String {
+        var params: [String: String] = [
+            "method": "user.getInfo",
+            "api_key": config.apiKey,
+            "sk": sessionKey,
+            "format": "json",
+        ]
+        params["api_sig"] = signLastFMRequest(parameters: params)
+
+        let url = try makeGETURL(params: params)
+        let data = try await fetch(url: url)
+        let decoded: UserInfoResponse
+        do {
+            decoded = try JSONDecoder().decode(UserInfoResponse.self, from: data)
+        } catch {
+            throw LastFMError.decodingFailed(Self.debugBody(data))
+        }
+        if let err = decoded.error, let msg = decoded.message {
+            throw LastFMError.apiError(code: err, message: msg)
+        }
+        guard let name = decoded.user?.name, !name.isEmpty else {
+            throw LastFMError.invalidResponse
+        }
+        return name
+    }
+
     func authURL(token: String) -> URL? {
         // Desktop auth flow: user approves in browser.
         var c = URLComponents(string: "https://www.last.fm/api/auth/")
@@ -173,5 +199,15 @@ private struct SessionResponse: Decodable {
     var session: LastFMSession?
     var error: Int?
     var message: String?
+}
+
+private struct UserInfoResponse: Decodable {
+    var user: LastFMUserInfo?
+    var error: Int?
+    var message: String?
+}
+
+private struct LastFMUserInfo: Decodable {
+    var name: String
 }
 

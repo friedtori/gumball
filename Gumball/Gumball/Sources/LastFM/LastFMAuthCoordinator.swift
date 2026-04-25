@@ -32,6 +32,7 @@ final class LastFMAuthCoordinator {
 
     func ensureSession(interactive: Bool = true) async throws -> String {
         if let existing = try loadSessionKey(), !existing.isEmpty {
+            await cacheUsernameIfNeeded(sessionKey: existing)
             log.info("Last.fm session key already present in Keychain")
             return existing
         }
@@ -53,6 +54,19 @@ final class LastFMAuthCoordinator {
         try? Keychain.setString(session.name, service: config.keychainService, account: "username")
         log.info("Stored Last.fm session key in Keychain for user=\(session.name, privacy: .public)")
         return session.key
+    }
+
+    private func cacheUsernameIfNeeded(sessionKey: String) async {
+        if let username = try? loadUsername(), !username.isEmpty {
+            return
+        }
+        do {
+            let username = try await client.getAuthenticatedUsername(sessionKey: sessionKey)
+            try? Keychain.setString(username, service: config.keychainService, account: "username")
+            log.info("Cached Last.fm username for existing session: \(username, privacy: .public)")
+        } catch {
+            log.notice("Could not cache Last.fm username for existing session: \(String(describing: error), privacy: .public)")
+        }
     }
 
     private func pollForSession(token: String, timeoutSeconds: TimeInterval, intervalSeconds: TimeInterval) async throws -> LastFMSession {

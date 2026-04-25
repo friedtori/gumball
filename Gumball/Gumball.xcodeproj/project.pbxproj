@@ -12,6 +12,7 @@
 		8A0D8F1E2C7E000100000001 /* NowPlayingEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F192C7E000100000001 /* NowPlayingEvent.swift */; };
 		8A0D8F1F2C7E000100000001 /* NowPlayingWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F1A2C7E000100000001 /* NowPlayingWatcher.swift */; };
 		8A0D8F202C7E000100000001 /* mediaremote-adapter in Resources */ = {isa = PBXBuildFile; fileRef = 8A0D8F1B2C7E000100000001 /* mediaremote-adapter */; };
+		8A0D8F3B2C7E000100000001 /* last-fm-logo-icon.svg in Resources */ = {isa = PBXBuildFile; fileRef = 8A0D8F3C2C7E000100000001 /* last-fm-logo-icon.svg */; };
 		8A0D8F232C7E000100000001 /* ScrobbleStateMachine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F242C7E000100000001 /* ScrobbleStateMachine.swift */; };
 		8A0D8F262C7E000100000001 /* ScrobbleQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F272C7E000100000001 /* ScrobbleQueue.swift */; };
 		8A0D8F282C7E000100000001 /* LastFMClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F292C7E000100000001 /* LastFMClient.swift */; };
@@ -30,6 +31,7 @@
 		8A0D8F192C7E000100000001 /* NowPlayingEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingEvent.swift; sourceTree = "<group>"; };
 		8A0D8F1A2C7E000100000001 /* NowPlayingWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingWatcher.swift; sourceTree = "<group>"; };
 		8A0D8F1B2C7E000100000001 /* mediaremote-adapter */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "mediaremote-adapter"; sourceTree = "<group>"; };
+		8A0D8F3C2C7E000100000001 /* last-fm-logo-icon.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = "last-fm-logo-icon.svg"; sourceTree = "<group>"; };
 		8A0D8F212C7E000100000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8A0D8F242C7E000100000001 /* ScrobbleStateMachine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrobbleStateMachine.swift; sourceTree = "<group>"; };
 		8A0D8F272C7E000100000001 /* ScrobbleQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrobbleQueue.swift; sourceTree = "<group>"; };
@@ -96,6 +98,7 @@
 			isa = PBXGroup;
 			children = (
 				8A0D8F1B2C7E000100000001 /* mediaremote-adapter */,
+				8A0D8F3C2C7E000100000001 /* last-fm-logo-icon.svg */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -206,6 +209,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8A0D8F202C7E000100000001 /* mediaremote-adapter in Resources */,
+				8A0D8F3B2C7E000100000001 /* last-fm-logo-icon.svg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
