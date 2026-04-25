@@ -8,8 +8,9 @@ Short-lived notes for **Cursor / Claude / Xcode** so the next session doesn’t 
 - `NowPlayingWatcher` → bundled `mediaremote-adapter` (`bin/` + `build/MediaRemoteAdapter.framework`)
 - `ScrobbleStateMachine` (wall-clock play time, scrobble eligibility, idle close rules)
 - `ScrobbleQueue` (SQLite) under `~/Library/Application Support/Gumball/gumball.sqlite3`
+- `ScrobbleFlushService` → `track.scrobble` POST (batches of ≤50), retry 11/16, re-auth 9, periodic + post-enqueue flush
 - Last.fm: desktop auth (token + browser + `auth.getSession`), session key in **Keychain**; API key/secret via **env** only
-- **No** full `track.scrobble` sender, **no** menu bar UI yet (beyond empty Settings for lifecycle)
+- **No** menu bar UI yet (empty Settings for lifecycle)
 
 ## Secrets / where things live
 
@@ -19,9 +20,9 @@ Short-lived notes for **Cursor / Claude / Xcode** so the next session doesn’t 
 
 ## Next (suggested)
 
-- [ ] Last.fm: `track.scrobble` batch + retry policy (11/16, re-auth 9)
-- [ ] Wire queue drain after auth; mark rows sent / failed
-- [ ] Menu bar: status item, current track, auth state, debug log tail
+- [ ] `track.updateNowPlaying` (optional best-effort per spec)
+- [ ] Menu bar: status item, current track, auth state, log tail
+- [ ] Optional: per-app scrobble filter, prefs UI
 
 ## Notes & gotchas
 
@@ -30,4 +31,10 @@ Short-lived notes for **Cursor / Claude / Xcode** so the next session doesn’t 
 
 ## Recent changes (log here)
 
-- _Add one line per meaningful commit or handoff. Example: `2026-04-25 — Initial git + devlog; queue + lastfm auth skeleton`_
+- 2026-04-25 — `track.scrobble` + `ScrobbleFlushService` (env creds, Keychain session, queue drain / retries / idle-close enqueue to DB)
+- 2026-04-25 — Temp debug: **Menu bar “Gumball”** + **Window “Scrobble queue (debug)”** (`QueueDebugBridge` + `fetchRecentForDebug`), auto-refresh ~3s
+- 2026-04-25 — Menu bar now shows current track, Last.fm auth state, and pending queue count via `AppStatusBridge`
+- 2026-04-25 — Fix Now Playing stale `Paused` state: adapter uses `stream --no-diff --no-artwork`; watcher also merges diff payloads if re-enabled later
+- 2026-04-25 — Fix scrobble accounting: `ScrobbleStateMachine` uses receive `Date()` for wall-clock play time, not adapter media timestamps
+- 2026-04-25 — Fix scrobble accrual on play→pause: add wall-clock delta whenever previous state was playing; emit candidate once threshold is reached; info-log close/drop reasons
+- 2026-04-25 — Add best-effort Last.fm `track.updateNowPlaying` on `ScrobbleStateMachine.nowPlaying` output

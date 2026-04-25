@@ -55,15 +55,21 @@ final class LastFMAuthCoordinator {
             do {
                 let session = try await client.getSession(token: token)
                 return session
-            } catch {
-                if case let LastFMError.apiError(code, _) = error, code != 14, code != 15 {
+            } catch let error as LastFMError {
+                switch error {
+                case .apiError(let code, _) where code == 14 || code == 15:
+                    // Not approved yet — keep polling.
+                    break
+                case .apiError, .decodingFailed, .httpStatus, .invalidResponse, .missingConfig, .sessionPollTimeout:
                     throw error
                 }
-                // 14/15 (token not yet authorized) or network hiccup: keep polling.
+            } catch {
+                // Transient network — keep polling until timeout.
+                log.debug("getSession poll: \(String(describing: error), privacy: .public)")
             }
             try? await Task.sleep(nanoseconds: UInt64(intervalSeconds * 1_000_000_000))
         }
-        throw LastFMError.invalidResponse
+        throw LastFMError.sessionPollTimeout
     }
 }
 

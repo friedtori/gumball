@@ -36,6 +36,8 @@ final class AdapterProcess {
             // Adapter usage: mediaremote-adapter.pl FRAMEWORK_PATH [TEST_CLIENT_PATH] [FUNCTION [OPTIONS...]]
             config.frameworkPath,
             "stream",
+            // Full snapshots avoid stale UI/state when diff payloads omit `playing`.
+            "--no-diff",
             // We don't render artwork yet; avoid huge base64 payloads.
             "--no-artwork",
         ]

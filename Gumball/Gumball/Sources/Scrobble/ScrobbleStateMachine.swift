@@ -51,6 +51,7 @@ actor ScrobbleStateMachine {
         var lastWallClock: Date
         var lastElapsedTime: Double?
         var lastPlaying: Bool
+        var candidateEmitted: Bool
     }
 
     private let log = Logger(subsystem: "com.gumball.Gumball", category: "ScrobbleSM")
@@ -64,6 +65,10 @@ actor ScrobbleStateMachine {
     func housekeeping(now: Date = Date()) -> [Output] {
         guard let cur = current else { return [] }
 
+        if let candidate = emitCandidateIfEligible(at: now, reason: "housekeeping-threshold") {
+            return [.scrobbleCandidate(candidate)]
+        }
+
         let idle = now.timeIntervalSince(cur.lastWallClock)
         if cur.lastPlaying == false {
             guard idle >= idleCloseSeconds else { return [] }
@@ -74,13 +79,15 @@ actor ScrobbleStateMachine {
         // is already scrobble-eligible. This avoids inventing ends for ineligible plays while still
         // preventing eligible plays from getting stranded indefinitely.
         guard idle >= idleClosePlayingEligibleSeconds else { return [] }
-        guard isScrobbleEligible(duration: curDurationSeconds(from: cur.key), playedSeconds: cur.playedSeconds) else { return [] }
+        guard isScrobbleEligible(duration: curDurationSeconds(from: cur.key), playedSeconds: effectivePlayedSeconds(cur, at: now)) else { return [] }
 
         return finalizeCurrent(at: now, closingReason: "idle-timeout-playing-eligible") ?? []
     }
 
     func process(_ event: NowPlayingEvent) -> [Output] {
-        let now = event.timestamp ?? Date()
+        // Use receive time for scrobble accounting. Adapter timestamps describe the media timeline
+        // snapshot (and can remain stale or jump); the scrobble rules require playing wall-clock time.
+        let now = Date()
 
         // If we don't have the minimum identity fields, we can't track a play.
         guard
@@ -112,10 +119,11 @@ actor ScrobbleStateMachine {
                 playedSeconds: 0,
                 lastWallClock: now,
                 lastElapsedTime: event.elapsedTime,
-                lastPlaying: event.playing
+                lastPlaying: event.playing,
+                candidateEmitted: false
             )
             outputs.append(.nowPlaying(makeNowPlayingPing(from: key, startedAt: now, duration: event.duration)))
-            log.debug("Open play: \(artist, privacy: .public) — \(title, privacy: .public)")
+            log.info("Open play: \(artist, privacy: .public) — \(title, privacy: .public) playing=\(event.playing, privacy: .public)")
             return outputs
         }
 
@@ -134,10 +142,11 @@ actor ScrobbleStateMachine {
                 playedSeconds: 0,
                 lastWallClock: now,
                 lastElapsedTime: event.elapsedTime,
-                lastPlaying: event.playing
+                lastPlaying: event.playing,
+                candidateEmitted: false
             )
             outputs.append(.nowPlaying(makeNowPlayingPing(from: key, startedAt: now, duration: event.duration)))
-            log.debug("Open play: \(artist, privacy: .public) — \(title, privacy: .public)")
+            log.info("Open play: \(artist, privacy: .public) — \(title, privacy: .public) playing=\(event.playing, privacy: .public)")
             return outputs
         }
 
@@ -149,6 +158,10 @@ actor ScrobbleStateMachine {
             current = cur
         }
 
+        if let candidate = emitCandidateIfEligible(at: now, reason: "threshold-reached") {
+            outputs.append(.scrobbleCandidate(candidate))
+        }
+
         return outputs
     }
 
@@ -157,7 +170,7 @@ actor ScrobbleStateMachine {
     private func accumulatePlayedTime(now: Date, newPlaying: Bool) {
         guard var cur = current else { return }
 
-        if cur.lastPlaying, newPlaying {
+        if cur.lastPlaying {
             let delta = max(0, now.timeIntervalSince(cur.lastWallClock))
             cur.playedSeconds += delta
         }
@@ -208,9 +221,15 @@ actor ScrobbleStateMachine {
         let duration = curDurationSeconds(from: tmp.key)
         let played = tmp.playedSeconds
 
-        log.debug("Close play (\(closingReason, privacy: .public)): played=\(played, privacy: .public)s title=\(tmp.key.title, privacy: .public)")
+        log.info("Close play (\(closingReason, privacy: .public)): played=\(played, privacy: .public)s title=\(tmp.key.title, privacy: .public)")
+
+        if tmp.candidateEmitted {
+            log.info("Drop close candidate (already emitted): title=\(tmp.key.title, privacy: .public)")
+            return []
+        }
 
         guard isScrobbleEligible(duration: duration, playedSeconds: played) else {
+            log.info("Drop close candidate (not eligible): played=\(played, privacy: .public)s duration=\(duration ?? -1, privacy: .public)s title=\(tmp.key.title, privacy: .public)")
             return []
         }
 
@@ -225,6 +244,32 @@ actor ScrobbleStateMachine {
             sourceParentBundleID: tmp.key.sourceParentBundleID
         )
         return [.scrobbleCandidate(candidate)]
+    }
+
+    private func emitCandidateIfEligible(at now: Date, reason: String) -> ScrobbleCandidate? {
+        guard var cur = current, cur.candidateEmitted == false else { return nil }
+
+        let duration = curDurationSeconds(from: cur.key)
+        let played = effectivePlayedSeconds(cur, at: now)
+        guard isScrobbleEligible(duration: duration, playedSeconds: played) else { return nil }
+
+        cur.playedSeconds = played
+        cur.lastWallClock = now
+        cur.candidateEmitted = true
+        current = cur
+
+        log.info("Emit scrobble candidate (\(reason, privacy: .public)): played=\(played, privacy: .public)s title=\(cur.key.title, privacy: .public)")
+
+        return ScrobbleCandidate(
+            artist: cur.key.artist,
+            track: cur.key.title,
+            album: cur.key.album,
+            duration: duration,
+            startedAt: cur.startedAt,
+            playedSeconds: played,
+            sourceBundleID: cur.key.sourceBundleID,
+            sourceParentBundleID: cur.key.sourceParentBundleID
+        )
     }
 
     // MARK: - Helpers
@@ -259,6 +304,11 @@ actor ScrobbleStateMachine {
     private func curDurationSeconds(from key: TrackKey) -> Double? {
         guard let bucket = key.durationBucket else { return nil }
         return Double(bucket)
+    }
+
+    private func effectivePlayedSeconds(_ cur: CurrentPlay, at now: Date) -> Double {
+        guard cur.lastPlaying else { return cur.playedSeconds }
+        return cur.playedSeconds + max(0, now.timeIntervalSince(cur.lastWallClock))
     }
 
     private func isScrobbleEligible(duration: Double?, playedSeconds: Double) -> Bool {

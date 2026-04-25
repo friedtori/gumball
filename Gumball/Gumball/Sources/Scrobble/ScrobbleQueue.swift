@@ -6,8 +6,9 @@ import os
 ///
 /// No GRDB yet; this is intentionally tiny and self-contained.
 actor ScrobbleQueue {
-    struct Row: Sendable {
+    struct Row: Sendable, Identifiable {
         var id: Int64
+        var status: String
         var artist: String
         var track: String
         var album: String?
@@ -97,6 +98,55 @@ actor ScrobbleQueue {
 
             rows.append(Row(
                 id: id,
+                status: "pending",
+                artist: artist,
+                track: track,
+                album: album,
+                duration: duration,
+                startedAt: startedAt,
+                playedSeconds: playedSeconds,
+                attempts: attempts,
+                lastError: lastError,
+                createdAt: createdAt
+            ))
+        }
+        return rows
+    }
+
+    /// Recent rows of any status (newest first). For debug UI only.
+    func fetchRecentForDebug(limit: Int = 150) throws -> [Row] {
+        let sql = """
+        SELECT id, status, artist, track, album, duration, started_at, played_seconds, attempts, last_error, created_at
+        FROM scrobble_queue
+        ORDER BY id DESC
+        LIMIT ?;
+        """
+        guard let db else { throw DBError.notOpen }
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else {
+            throw DBError.sqlite(message: lastError(db))
+        }
+        defer { sqlite3_finalize(stmt) }
+
+        sqlite3_bind_int(stmt, 1, Int32(limit))
+
+        var rows: [Row] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let id = sqlite3_column_int64(stmt, 0)
+            let status = columnText(stmt, 1) ?? "?"
+            let artist = columnText(stmt, 2) ?? ""
+            let track = columnText(stmt, 3) ?? ""
+            let album = columnText(stmt, 4)
+            let duration = columnDouble(stmt, 5)
+            let startedAt = Date(timeIntervalSince1970: sqlite3_column_double(stmt, 6))
+            let playedSeconds = sqlite3_column_double(stmt, 7)
+            let attempts = Int(sqlite3_column_int(stmt, 8))
+            let lastError = columnText(stmt, 9)
+            let createdAt = Date(timeIntervalSince1970: sqlite3_column_double(stmt, 10))
+
+            rows.append(Row(
+                id: id,
+                status: status,
                 artist: artist,
                 track: track,
                 album: album,

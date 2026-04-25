@@ -20,6 +20,7 @@ final class NowPlayingWatcher: NowPlayingSource, @unchecked Sendable {
     private var shouldRun = ManagedAtomicFlag()
 
     private var lastEmitted: NowPlayingEvent?
+    private var currentSnapshot: NowPlayingEvent?
 
     init() {}
 
@@ -95,11 +96,17 @@ final class NowPlayingWatcher: NowPlayingSource, @unchecked Sendable {
     private func handleStdoutLine(_ line: String) {
         guard let data = line.data(using: .utf8) else { return }
         // `stream` output is an envelope: {"type":"data","diff":false,"payload":{...}}
-        // We only care about the nested payload.
+        // If diffing is ever re-enabled, merge partial payloads into the last full snapshot.
         guard let envelope = try? decoder.decode(AdapterStreamEnvelope.self, from: data) else { return }
         guard let payload = envelope.payload else { return }
 
-        let event = NowPlayingEvent(adapter: payload)
+        let event: NowPlayingEvent
+        if envelope.diff == true, let previous = currentSnapshot {
+            event = previous.merging(adapter: payload)
+        } else {
+            event = NowPlayingEvent(adapter: payload)
+        }
+        currentSnapshot = event
 
         // Debounce identical events (including playing state + elapsed/duration + metadata).
         if event == lastEmitted { return }

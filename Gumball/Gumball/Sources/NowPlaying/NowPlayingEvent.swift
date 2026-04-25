@@ -82,5 +82,19 @@ extension NowPlayingEvent {
         self.elapsedTime = payload.elapsedTime
         self.timestamp = payload.timestamp?.date
     }
+
+    func merging(adapter payload: AdapterPayload) -> NowPlayingEvent {
+        NowPlayingEvent(
+            bundleIdentifier: payload.bundleIdentifier ?? bundleIdentifier,
+            parentApplicationBundleIdentifier: payload.parentApplicationBundleIdentifier ?? parentApplicationBundleIdentifier,
+            playing: payload.playing ?? playing,
+            title: payload.title ?? title,
+            artist: payload.artist ?? artist,
+            album: payload.album ?? album,
+            duration: payload.duration ?? duration,
+            elapsedTime: payload.elapsedTime ?? elapsedTime,
+            timestamp: payload.timestamp?.date ?? timestamp
+        )
+    }
 }
 

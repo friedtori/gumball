@@ -12,16 +12,18 @@ struct LastFMConfig: Sendable {
 
 enum LastFMError: Error, Sendable {
     case missingConfig
-    case httpStatus(Int)
+    case httpStatus(Int, body: String)
     case apiError(code: Int, message: String)
-    case decodingFailed
+    case decodingFailed(String)
     case invalidResponse
+    case sessionPollTimeout
 }
 
 /// Minimal Last.fm API client for auth + signing.
 final class LastFMClient {
-    private let config: LastFMConfig
-    private let session: URLSession
+    /// Internal so `LastFMTrackScrobble` (same target) can sign POST bodies.
+    let config: LastFMConfig
+    let session: URLSession
 
     init(config: LastFMConfig, session: URLSession = .shared) {
         self.config = config
@@ -29,14 +31,21 @@ final class LastFMClient {
     }
 
     func getToken() async throws -> String {
-        let params: [String: String] = [
+        var params: [String: String] = [
             "method": "auth.getToken",
             "api_key": config.apiKey,
             "format": "json",
         ]
+        // auth.getToken requires api_sig; `format` must not be part of the signature (authspec §8).
+        params["api_sig"] = signLastFMRequest(parameters: params)
         let url = try makeGETURL(params: params)
         let data = try await fetch(url: url)
-        let decoded = try JSONDecoder().decode(TokenResponse.self, from: data)
+        let decoded: TokenResponse
+        do {
+            decoded = try JSONDecoder().decode(TokenResponse.self, from: data)
+        } catch {
+            throw LastFMError.decodingFailed(Self.debugBody(data))
+        }
         if let err = decoded.error, let msg = decoded.message {
             throw LastFMError.apiError(code: err, message: msg)
         }
@@ -51,11 +60,16 @@ final class LastFMClient {
             "token": token,
             "format": "json",
         ]
-        params["api_sig"] = sign(params: params)
+        params["api_sig"] = signLastFMRequest(parameters: params)
 
         let url = try makeGETURL(params: params)
         let data = try await fetch(url: url)
-        let decoded = try JSONDecoder().decode(SessionResponse.self, from: data)
+        let decoded: SessionResponse
+        do {
+            decoded = try JSONDecoder().decode(SessionResponse.self, from: data)
+        } catch {
+            throw LastFMError.decodingFailed(Self.debugBody(data))
+        }
         if let err = decoded.error, let msg = decoded.message {
             throw LastFMError.apiError(code: err, message: msg)
         }
@@ -65,13 +79,28 @@ final class LastFMClient {
 
     func authURL(token: String) -> URL? {
         // Desktop auth flow: user approves in browser.
-        URL(string: "https://www.last.fm/api/auth/?api_key=\(config.apiKey)&token=\(token)")
+        var c = URLComponents(string: "https://www.last.fm/api/auth/")
+        c?.queryItems = [
+            URLQueryItem(name: "api_key", value: config.apiKey),
+            URLQueryItem(name: "token", value: token),
+        ]
+        return c?.url
     }
 
     // MARK: - Signing
 
-    /// Per spec: sort params alphabetically by name, concat `<name><value>`, append secret, MD5.
-    func sign(params: [String: String]) -> String {
+    /// Last.fm authspec §8: `format` and `callback` are sent on the wire but **must not** be included in the `api_sig` hash.
+    /// `api_sig` itself is never part of the hash input.
+    func signLastFMRequest(parameters: [String: String]) -> String {
+        var p = parameters
+        p.removeValue(forKey: "api_sig")
+        p.removeValue(forKey: "format")
+        p.removeValue(forKey: "callback")
+        return signSortedParamsForMD5(p)
+    }
+
+    /// Sort params alphabetically by name, concat `<name><value>`, append secret, MD5 (hex lowercase).
+    private func signSortedParamsForMD5(_ params: [String: String]) -> String {
         let sortedKeys = params.keys.sorted()
         var s = ""
         for k in sortedKeys {
@@ -95,8 +124,29 @@ final class LastFMClient {
     private func fetch(url: URL) async throws -> Data {
         let (data, resp) = try await session.data(from: url)
         guard let http = resp as? HTTPURLResponse else { throw LastFMError.invalidResponse }
-        guard (200..<300).contains(http.statusCode) else { throw LastFMError.httpStatus(http.statusCode) }
+        if let apiError = Self.parseAPIErrorIfPresent(data) {
+            throw LastFMError.apiError(code: apiError.code, message: apiError.message)
+        }
+        guard (200..<300).contains(http.statusCode) else {
+            throw LastFMError.httpStatus(http.statusCode, body: Self.debugBody(data))
+        }
         return data
+    }
+
+    static func parseAPIErrorIfPresent(_ data: Data) -> (code: Int, message: String)? {
+        guard
+            let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+            let code = obj["error"] as? Int
+        else {
+            return nil
+        }
+        return (code, (obj["message"] as? String) ?? "")
+    }
+
+    private static func debugBody(_ data: Data, maxLen: Int = 500) -> String {
+        let s = String(data: data, encoding: .utf8) ?? "<non-utf8 \(data.count) bytes>"
+        if s.count <= maxLen { return s }
+        return String(s.prefix(maxLen)) + "…"
     }
 }
 
@@ -108,10 +158,15 @@ private struct TokenResponse: Decodable {
     var message: String?
 }
 
+/// Last.fm returns `subscriber` as either `0` or `"0"` depending on endpoint/version; we only need `name` + `key`.
 struct LastFMSession: Decodable, Sendable {
     var name: String
     var key: String
-    var subscriber: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case key
+    }
 }
 
 private struct SessionResponse: Decodable {
