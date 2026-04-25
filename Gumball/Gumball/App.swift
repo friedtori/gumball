@@ -22,7 +22,7 @@ struct GumballApp: App {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private var watcher: NowPlayingWatcher?
+    private var watcher: (any NowPlayingSource)?
     private var task: Task<Void, Never>?
     private var housekeepingTask: Task<Void, Never>?
     private var lastfmTask: Task<Void, Never>?
@@ -37,7 +37,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
 
-        let watcher = NowPlayingWatcher()
+        let watcher = MediaRemoteWatcher()
         self.watcher = watcher
 
         if let rawAPIKey = ProcessInfo.processInfo.environment["LASTFM_API_KEY"],
