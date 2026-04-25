@@ -38,8 +38,6 @@ final class AdapterProcess {
             "stream",
             // Full snapshots avoid stale UI/state when diff payloads omit `playing`.
             "--no-diff",
-            // We don't render artwork yet; avoid huge base64 payloads.
-            "--no-artwork",
         ]
 
         let out = Pipe()

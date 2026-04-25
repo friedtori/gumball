@@ -19,6 +19,9 @@ struct NowPlayingEvent: Equatable, Sendable {
 
     /// Timestamp for this snapshot, if provided by the adapter.
     var timestamp: Date?
+
+    /// Decoded artwork image bytes, if the adapter provided them.
+    var artworkData: Data?
 }
 
 extension NowPlayingEvent {
@@ -38,6 +41,10 @@ extension NowPlayingEvent {
         var elapsedTime: Double?
 
         var timestamp: TimestampValue?
+
+        /// Base64-encoded image bytes from the adapter.
+        var artworkData: String?
+        var artworkMimeType: String?
 
         struct TimestampValue: Decodable, Sendable {
             var date: Date?
@@ -81,6 +88,9 @@ extension NowPlayingEvent {
         self.duration = payload.duration
         self.elapsedTime = payload.elapsedTime
         self.timestamp = payload.timestamp?.date
+        self.artworkData = payload.artworkData.flatMap {
+            Data(base64Encoded: $0, options: .ignoreUnknownCharacters)
+        }
     }
 
     func merging(adapter payload: AdapterPayload) -> NowPlayingEvent {
@@ -93,7 +103,10 @@ extension NowPlayingEvent {
             album: payload.album ?? album,
             duration: payload.duration ?? duration,
             elapsedTime: payload.elapsedTime ?? elapsedTime,
-            timestamp: payload.timestamp?.date ?? timestamp
+            timestamp: payload.timestamp?.date ?? timestamp,
+            artworkData: payload.artworkData.flatMap {
+                Data(base64Encoded: $0, options: .ignoreUnknownCharacters)
+            } ?? artworkData
         )
     }
 }

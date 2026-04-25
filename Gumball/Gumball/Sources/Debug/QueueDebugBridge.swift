@@ -1,3 +1,4 @@
+import AppKit
 import Combine
 import Foundation
 import SwiftUI
@@ -16,6 +17,12 @@ final class AppStatusBridge: ObservableObject {
     @Published var authStatus: LastFMAuthStatus = .notConfigured
     @Published var currentTrack: String = "Nothing playing"
     @Published var pendingCount: Int = 0
+
+    @Published var isPlaying: Bool = false
+    @Published var trackTitle: String? = nil
+    @Published var trackArtist: String? = nil
+    @Published var trackAlbum: String? = nil
+    @Published var artworkImage: NSImage? = nil
 
     private init() {}
 }

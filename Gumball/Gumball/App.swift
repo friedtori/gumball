@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import os
 
@@ -14,6 +15,7 @@ struct GumballApp: App {
         MenuBarExtra("Gumball", systemImage: "opticaldisc") {
             GumballMenuBarCommands()
         }
+        .menuBarExtraStyle(.window)
 
         Settings {
             EmptyView()
@@ -87,6 +89,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 log.info("NowPlaying: playing=\(event.playing, privacy: .public) title=\(event.title ?? "-", privacy: .public) artist=\(event.artist ?? "-", privacy: .public) album=\(event.album ?? "-", privacy: .public) dur=\(event.duration ?? -1, privacy: .public) elapsed=\(event.elapsedTime ?? -1, privacy: .public)")
                 await MainActor.run {
                     AppStatusBridge.shared.currentTrack = Self.displayTrack(event)
+                    AppStatusBridge.shared.isPlaying = event.playing
+                    if event.playing {
+                        // Playing: always reflect latest metadata.
+                        AppStatusBridge.shared.trackTitle = event.title
+                        AppStatusBridge.shared.trackArtist = event.artist
+                        AppStatusBridge.shared.trackAlbum = event.album
+                    } else if event.title != nil || event.artist != nil {
+                        // Paused with identity: update (handles startup-while-paused).
+                        AppStatusBridge.shared.trackTitle = event.title
+                        AppStatusBridge.shared.trackArtist = event.artist
+                        AppStatusBridge.shared.trackAlbum = event.album
+                    }
+                    // Paused with no metadata: keep existing fields intact til next play.
+                    if let data = event.artworkData {
+                        AppStatusBridge.shared.artworkImage = NSImage(data: data)
+                    } else if event.playing {
+                        // Playing with no artworkData: keep previous (adapter drops briefly on seek).
+                    } else if event.title == nil && event.artist == nil {
+                        AppStatusBridge.shared.artworkImage = nil  // truly nothing playing
+                    }
+                    // Paused with artwork but no new data: keep for greyscale display.
                 }
 
                 let outputs = await self.scrobbleSM.process(event)
