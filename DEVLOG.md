@@ -2,7 +2,7 @@
 
 Short-lived notes for **Cursor / Claude / Xcode** so the next session doesn't guess. Commit updates when you switch tools or land a chunk of work.
 
-## Current state (v0.5)
+## Current state (v0.9)
 
 - macOS 15+ SwiftUI app, `LSUIElement`, arm64; Xcode project `Gumball/Gumball.xcodeproj`
 - `NowPlayingWatcher` → bundled `mediaremote-adapter` (`bin/` + `build/MediaRemoteAdapter.framework`)
@@ -64,3 +64,10 @@ Short-lived notes for **Cursor / Claude / Xcode** so the next session doesn't gu
 - 2026-04-26 — Seam feather now auto-disables when scroll speed is Static (duration 0)
 - 2026-04-26 — Menu polish: stronger subtle album-art shadow; Options/Quit collapsed to trailing icon-only actions
 - 2026-04-26 — Icon-only Options/Quit actions now match menu hover treatment with rounded highlight and foreground lift
+- 2026-04-27 — v0.9: AOTY Liquid Glass chip, RYM/AOTY equal-width chips with hairline stroke, Sources/Debug → Sources/UI rename
+- 2026-04-27 — Light mode: adaptive sat/contrast shader values, inner glow overlay (screen blend, light-mode only), hardcoded opacity 0.38L/0.55D
+- 2026-04-27 — Last.fm badge isTemplate=true for adaptive color; "CONNECTED" small-caps label; Last.fm profile link moved to bottom action row
+- 2026-04-27 — Layout: 16pt uniform inset, authStatusRow aligned to metadata leading edge, play/pause enlarged (22pt, 90% opacity)
+- 2026-04-27 — Seamless scroll fix: sweep 2×width per cycle to complete full mirror period; maxSampleOffset doubled
+- 2026-04-27 — sameImage uses tiffRepresentation to prevent double crossfade on play/pause events
+- 2026-04-27 — Single-pass Metal shaders (scrollAndSlitScan, scrollAndColorAdjust) replace two-pass chain; FPS reduced: Slow 4, Med 8, Fast 15

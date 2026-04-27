@@ -551,27 +551,18 @@ private enum SlitScanArtwork {
     /// The moving layer invalidates SwiftUI; tie FPS to speed to keep slower motion cheap.
     static func scrollFramesPerSecond(duration: TimeInterval) -> TimeInterval {
         switch duration {
-        case 0:
-            0
-        case 30:
-            8
-        case 20:
-            12
-        case 8:
-            20
-        default:
-            8
+        case 0:  0
+        case 30: 4
+        case 20: 8
+        case 8:  15
+        default: 4
         }
     }
 
     private static let blurContext = CIContext()
 
     static func scrollSampleOffset(layerWidth: CGFloat) -> CGSize {
-        CGSize(width: max(layerWidth, 1), height: 0)
-    }
-
-    static func slitScanSampleOffset(stripWidth: CGFloat) -> CGSize {
-        CGSize(width: max(stripWidth * 2, 1), height: 0)
+        CGSize(width: max(layerWidth * 2, 1), height: 0)
     }
 
     static func activeSeamFeatherWidth(forDuration duration: TimeInterval) -> CGFloat {
@@ -633,7 +624,9 @@ private struct ScrollOffsetTimeline<Content: View>: View {
         guard scrollDuration > 0 else { return 0 }
         let phase = scrollTime(at: date)
             .truncatingRemainder(dividingBy: scrollDuration) / scrollDuration
-        return -CGFloat(phase) * width
+        // Sweep 2× width to complete one full mirror cycle (forward + backward),
+        // so the wrap-around lands back at the seam and the loop is seamless.
+        return -CGFloat(phase) * width * 2
     }
 
     private func scrollTime(at date: Date) -> TimeInterval {
@@ -683,20 +676,15 @@ private struct BlurredArtworkBackground: View {
         ScrollOffsetTimeline(scrollDuration: scrollDuration, isPaused: isPaused) { offset, layerWidth in
             StaticArtworkLayer(image: image)
                 .layerEffect(
-                    ShaderLibrary.scrollSample(
+                    ShaderLibrary.scrollAndColorAdjust(
                         .float(Float(layerWidth)),
                         .float(Float(offset)),
-                        .float(Float(SlitScanArtwork.activeSeamFeatherWidth(forDuration: scrollDuration)))
-                    ),
-                    maxSampleOffset: SlitScanArtwork.scrollSampleOffset(layerWidth: layerWidth)
-                )
-                .layerEffect(
-                    ShaderLibrary.colorAdjust(
+                        .float(Float(SlitScanArtwork.activeSeamFeatherWidth(forDuration: scrollDuration))),
                         .float(effectiveSaturation),
                         .float(effectiveContrast),
                         .float(1.0)
                     ),
-                    maxSampleOffset: .zero
+                    maxSampleOffset: SlitScanArtwork.scrollSampleOffset(layerWidth: layerWidth)
                 )
         }
     }
@@ -722,21 +710,16 @@ private struct SlitScannedArtwork: View {
         ScrollOffsetTimeline(scrollDuration: scrollDuration, isPaused: isPaused) { offset, layerWidth in
             StaticArtworkLayer(image: image)
                 .layerEffect(
-                    ShaderLibrary.scrollSample(
+                    ShaderLibrary.scrollAndSlitScan(
                         .float(Float(layerWidth)),
                         .float(Float(offset)),
-                        .float(Float(SlitScanArtwork.activeSeamFeatherWidth(forDuration: scrollDuration)))
-                    ),
-                    maxSampleOffset: SlitScanArtwork.scrollSampleOffset(layerWidth: layerWidth)
-                )
-                .layerEffect(
-                    ShaderLibrary.slitScan(
-                        .float(stripWidth),
+                        .float(Float(SlitScanArtwork.activeSeamFeatherWidth(forDuration: scrollDuration))),
+                        .float(Float(stripWidth)),
                         .float(effectiveSaturation),
                         .float(effectiveContrast),
                         .float(brightnessBoost)
                     ),
-                    maxSampleOffset: SlitScanArtwork.slitScanSampleOffset(stripWidth: stripWidth)
+                    maxSampleOffset: SlitScanArtwork.scrollSampleOffset(layerWidth: layerWidth)
                 )
         }
     }
