@@ -45,70 +45,43 @@ private enum PlaybackController {
     static func previousTrack()   { _ = sendCommand?(5, nil) }
 }
 
-private struct RYMBadge: View {
-    private static let image: NSImage? = {
-        guard let url = Bundle.main.url(forResource: "rym-logo", withExtension: "svg") else {
-            return nil
-        }
-        return NSImage(contentsOf: url)
-    }()
+/// Bundle-loaded SVG badge with a one-shot NSImage cache per (resource, isTemplate) pair.
+/// Replaces what used to be three near-identical badge views (RYM / AOTY / Last.fm).
+/// `isTemplate = true` makes AppKit ignore the SVG fill and render in the foreground colour
+/// (i.e. adaptive dark/light); leave `false` to keep the SVG's original colours.
+private struct IconBadge: View {
+    let resource: String
+    var size: CGSize = CGSize(width: 14, height: 14)
+    var isTemplate: Bool = false
+    var fallbackSystemName: String = "magnifyingglass"
 
-    var body: some View {
-        if let image = Self.image {
-            Image(nsImage: image)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 14, height: 14)
-        } else {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
-        }
+    @MainActor private static var cache: [CacheKey: NSImage] = [:]
+
+    private struct CacheKey: Hashable {
+        let resource: String
+        let isTemplate: Bool
     }
-}
 
-private struct AOTYBadge: View {
-    private static let image: NSImage? = {
-        guard let url = Bundle.main.url(forResource: "aoty-logo", withExtension: "svg") else {
-            return nil
-        }
-        let img = NSImage(contentsOf: url)
-        img?.isTemplate = true   // adaptive: dark in light mode, light in dark mode
+    @MainActor
+    private static func image(for key: CacheKey) -> NSImage? {
+        if let cached = cache[key] { return cached }
+        guard
+            let url = Bundle.main.url(forResource: key.resource, withExtension: "svg"),
+            let img = NSImage(contentsOf: url)
+        else { return nil }
+        img.isTemplate = key.isTemplate
+        cache[key] = img
         return img
-    }()
-
-    var body: some View {
-        if let image = Self.image {
-            Image(nsImage: image)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 14, height: 14)
-        } else {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
-        }
     }
-}
-
-private struct LastFMBadge: View {
-    private static let image: NSImage? = {
-        guard let url = Bundle.main.url(forResource: "last-fm-logo-icon", withExtension: "svg") else {
-            return nil
-        }
-        let img = NSImage(contentsOf: url)
-        img?.isTemplate = true   // renders in foreground color → dark in light mode, light in dark mode
-        return img
-    }()
 
     var body: some View {
-        if let image = Self.image {
+        if let image = Self.image(for: CacheKey(resource: resource, isTemplate: isTemplate)) {
             Image(nsImage: image)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 18, height: 10)
+                .frame(width: size.width, height: size.height)
         } else {
-            Image(systemName: "link.circle.fill")
+            Image(systemName: fallbackSystemName)
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
         }
@@ -129,7 +102,7 @@ private struct LastFMProfileLink: View {
                     .font(.system(size: 10, weight: .semibold).smallCaps())
                     .foregroundStyle(isHovering && url != nil ? .primary : .secondary)
             } icon: {
-                LastFMBadge()
+                IconBadge(resource: "last-fm-logo-icon", size: CGSize(width: 18, height: 10), isTemplate: true)
                     .opacity(isHovering ? 1.0 : 0.55)
             }
             .padding(.horizontal, 4)
@@ -156,14 +129,14 @@ private struct ExternalLinksRow: View {
         HStack(spacing: 4) {
             if let rymURL {
                 ExternalLinkChip(url: rymURL, help: "Open on RateYourMusic") {
-                    RYMBadge()
+                    IconBadge(resource: "rym-logo")
                 } label: {
                     Text("RYM")
                 }
             }
             if let aotyURL {
                 ExternalLinkChip(url: aotyURL, help: "Open on Album of the Year") {
-                    AOTYBadge()
+                    IconBadge(resource: "aoty-logo", isTemplate: true)
                 } label: {
                     Text("AOTY")
                 }
@@ -392,148 +365,6 @@ private struct PopoverHoverControlButton<Content: View>: View {
     }
 }
 
-// MARK: - Album art (legacy: dominant colors, local k-means in HSL)
-
-#if false
-private struct HSLPixel {
-    var h: Double // 0–360
-    var s: Double // 0–1
-    var l: Double // 0–1
-
-    func hueDistance(to other: HSLPixel) -> Double {
-        let d = abs(h - other.h)
-        return min(d, 360 - d)
-    }
-
-    func distance(to other: HSLPixel) -> Double {
-        let hd = hueDistance(to: other) / 180.0
-        let sd = s - other.s
-        let ld = l - other.l
-        return sqrt(hd * hd + sd * sd + ld * ld)
-    }
-
-    func toColor(desaturate: Double = 0.7, darken: Double = 0.85) -> Color {
-        let adjS = s * desaturate
-        let adjL = l * darken
-        let c = (1 - abs(2 * adjL - 1)) * adjS
-        let x = c * (1 - abs((h / 60).truncatingRemainder(dividingBy: 2) - 1))
-        let m = adjL - c / 2
-        let (r1, g1, b1): (Double, Double, Double)
-        switch h {
-        case 0..<60:    (r1, g1, b1) = (c, x, 0)
-        case 60..<120:  (r1, g1, b1) = (x, c, 0)
-        case 120..<180: (r1, g1, b1) = (0, c, x)
-        case 180..<240: (r1, g1, b1) = (0, x, c)
-        case 240..<300: (r1, g1, b1) = (x, 0, c)
-        default:        (r1, g1, b1) = (c, 0, x)
-        }
-        return Color(red: r1 + m, green: g1 + m, blue: b1 + m)
-    }
-}
-
-private func rgbToHSL(r: Double, g: Double, b: Double) -> HSLPixel? {
-    let maxC = max(r, g, b), minC = min(r, g, b)
-    let l = (maxC + minC) / 2
-    guard maxC != minC else { return nil }
-    let d = maxC - minC
-    let s = l > 0.5 ? d / (2 - maxC - minC) : d / (maxC + minC)
-    if s < 0.15 { return nil }
-    if l < 0.1 || l > 0.9 { return nil }
-    var h: Double
-    if maxC == r { h = ((g - b) / d).truncatingRemainder(dividingBy: 6) }
-    else if maxC == g { h = (b - r) / d + 2 }
-    else { h = (r - g) / d + 4 }
-    h *= 60
-    if h < 0 { h += 360 }
-    return HSLPixel(h: h, s: s, l: l)
-}
-
-private func extractPalette(from image: NSImage) -> (Color, Color)? {
-    let sampleSize = 40
-    guard let tiff = image.tiffRepresentation,
-          let bitmap = NSBitmapImageRep(data: tiff) else { return nil }
-
-    let resized = NSBitmapImageRep(
-        bitmapDataPlanes: nil,
-        pixelsWide: sampleSize, pixelsHigh: sampleSize,
-        bitsPerSample: 8, samplesPerPixel: 4,
-        hasAlpha: true, isPlanar: false,
-        colorSpaceName: .deviceRGB,
-        bytesPerRow: sampleSize * 4,
-        bitsPerPixel: 32
-    )!
-    NSGraphicsContext.saveGraphicsState()
-    NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: resized)
-    bitmap.draw(in: NSRect(x: 0, y: 0, width: sampleSize, height: sampleSize))
-    NSGraphicsContext.restoreGraphicsState()
-
-    var pixels: [HSLPixel] = []
-    for y in 0..<sampleSize {
-        for x in 0..<sampleSize {
-            guard let c = resized.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB),
-                  let hsl = rgbToHSL(r: c.redComponent, g: c.greenComponent, b: c.blueComponent)
-            else { continue }
-            pixels.append(hsl)
-        }
-    }
-    guard pixels.count >= 2 else { return nil }
-
-    let k = min(6, pixels.count)
-    var centroids = (0..<k).map { pixels[$0 * pixels.count / k] }
-    var assignments = [Int](repeating: 0, count: pixels.count)
-
-    for _ in 0..<10 {
-        for (i, px) in pixels.enumerated() {
-            var bestDist = Double.greatestFiniteMagnitude
-            for (j, cent) in centroids.enumerated() {
-                let d = px.distance(to: cent)
-                if d < bestDist { bestDist = d; assignments[i] = j }
-            }
-        }
-        var newH = [Double](repeating: 0, count: k)
-        var newS = [Double](repeating: 0, count: k)
-        var newL = [Double](repeating: 0, count: k)
-        var counts = [Int](repeating: 0, count: k)
-        var sinH = [Double](repeating: 0, count: k)
-        var cosH = [Double](repeating: 0, count: k)
-        for (i, px) in pixels.enumerated() {
-            let j = assignments[i]
-            let hRad = px.h * .pi / 180
-            sinH[j] += sin(hRad)
-            cosH[j] += cos(hRad)
-            newS[j] += px.s
-            newL[j] += px.l
-            counts[j] += 1
-        }
-        for j in 0..<k where counts[j] > 0 {
-            var avgH = atan2(sinH[j], cosH[j]) * 180 / .pi
-            if avgH < 0 { avgH += 360 }
-            centroids[j] = HSLPixel(
-                h: avgH,
-                s: newS[j] / Double(counts[j]),
-                l: newL[j] / Double(counts[j])
-            )
-        }
-        _ = newH
-    }
-
-    var clusterSizes = [Int](repeating: 0, count: k)
-    for j in assignments { clusterSizes[j] += 1 }
-
-    let ranked = (0..<k)
-        .filter { clusterSizes[$0] > 0 }
-        .sorted { centroids[$0].s * Double(clusterSizes[$0]) > centroids[$1].s * Double(clusterSizes[$1]) }
-
-    guard let first = ranked.first else { return nil }
-    let c1 = centroids[first]
-
-    let second = ranked.dropFirst().first { c1.hueDistance(to: centroids[$0]) > 30 }
-    let c2 = second.map { centroids[$0] } ?? HSLPixel(h: c1.h, s: c1.s * 0.5, l: min(c1.l + 0.15, 0.85))
-
-    return (c1.toColor(), c2.toColor())
-}
-#endif
-
 // MARK: - Slit-scan popover background (Metal `layerEffect`; artwork tile is normal)
 
 private enum SlitScanArtwork {
@@ -730,8 +561,8 @@ struct GumballMenuBarCommands: View {
     @Environment(\.openWindow) private var openWindow
     @ObservedObject private var status = AppStatusBridge.shared
     @AppStorage(GumballOptionKeys.backgroundStyle) private var backgroundStyle = MenuBarBackgroundStyle.slitScan.rawValue
-    private let backgroundOpacityLight = 0.38
-    private let backgroundOpacityDark = 0.55
+    private let backgroundOpacityLight = Design.Background.opacityLight
+    private let backgroundOpacityDark = Design.Background.opacityDark
     @AppStorage(GumballOptionKeys.backgroundScrollDuration) private var backgroundScrollDuration = 30.0
     @State private var lastArtworkImage: NSImage?
     @State private var backgroundArtworkImage: NSImage?
@@ -745,14 +576,14 @@ struct GumballMenuBarCommands: View {
             controlsSection
             authStatusRow
                 .padding(.vertical, 8)
-                .padding(.leading, 94)
-                .padding(.trailing, 16)
+                .padding(.leading, Design.Artwork.metadataLeading)
+                .padding(.trailing, Design.Popover.inset)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Divider()
-                .padding(.horizontal, 280 * 0.05)
+                .padding(.horizontal, Design.Popover.width * Design.Popover.dividerInsetRatio)
             actionSection
         }
-        .frame(width: 280)
+        .frame(width: Design.Popover.width)
         .background {
             albumArtBackground
         }
@@ -826,7 +657,7 @@ struct GumballMenuBarCommands: View {
         if let backgroundArtworkImage {
             fadingArtworkImage = backgroundArtworkImage
             fadingArtworkOpacity = colorScheme == .dark ? backgroundOpacityDark : backgroundOpacityLight
-            withAnimation(.easeInOut(duration: 0.7)) {
+            withAnimation(.easeInOut(duration: Design.Animation.crossfade)) {
                 fadingArtworkOpacity = 0
             }
             clearFadingArtwork(after: 0.75, image: backgroundArtworkImage)
@@ -864,8 +695,8 @@ struct GumballMenuBarCommands: View {
     private var nowPlayingSection: some View {
         HStack(alignment: .center, spacing: 10) {
             artworkView
-                .frame(width: 68, height: 68)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .frame(width: Design.Artwork.size, height: Design.Artwork.size)
+                .clipShape(RoundedRectangle(cornerRadius: Design.Artwork.cornerRadius))
                 .shadow(color: .black.opacity(0.22), radius: 7, x: 0, y: 3)
                 .shadow(color: .black.opacity(0.12), radius: 1, x: 0, y: 1)
 
@@ -902,8 +733,8 @@ struct GumballMenuBarCommands: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(minHeight: 74)
-        .padding(.horizontal, 16)
-        .padding(.top, 16)
+        .padding(.horizontal, Design.Popover.inset)
+        .padding(.top, Design.Popover.inset)
         .padding(.bottom, 4)
     }
 
@@ -923,7 +754,7 @@ struct GumballMenuBarCommands: View {
                     }
                 }
         } else {
-            RoundedRectangle(cornerRadius: 6)
+            RoundedRectangle(cornerRadius: Design.Artwork.cornerRadius)
                 .fill(Color.secondary.opacity(0.15))
                 .overlay {
                     Image(systemName: status.isPlaying ? "music.note" : "pause.circle")
@@ -950,7 +781,7 @@ struct GumballMenuBarCommands: View {
             }) { isHovering in
                 Image(systemName: status.isPlaying ? "pause.fill" : "play.fill")
                     .font(.system(size: 22))
-                    .foregroundStyle(isHovering ? Color.primary : Color.primary.opacity(0.9))
+                    .foregroundStyle(isHovering ? Color.primary : Color.primary.opacity(Design.Hover.primaryRestingOpacity))
             }
 
             PopoverHoverControlButton(help: "Next track", action: {
@@ -965,7 +796,7 @@ struct GumballMenuBarCommands: View {
         }
         .padding(.top, 2)
         .padding(.bottom, 10)
-        .padding(.leading, 86 + 8)
+        .padding(.leading, Design.Artwork.metadataLeading)
     }
 
     @ViewBuilder
@@ -997,7 +828,7 @@ struct GumballMenuBarCommands: View {
                 )
                 .offset(y: 1)
         }
-        .animation(.easeInOut(duration: 0.15), value: loved)
+        .animation(.easeInOut(duration: Design.Animation.love), value: loved)
     }
 
     // MARK: - Status
@@ -1115,7 +946,7 @@ struct GumballMenuBarCommands: View {
             .keyboardShortcut("q", modifiers: .command)
         }
         .padding(.vertical, 8)
-        .padding(.horizontal, 16)
+        .padding(.horizontal, Design.Popover.inset)
         .frame(maxWidth: .infinity, alignment: .trailing)
     }
 }
