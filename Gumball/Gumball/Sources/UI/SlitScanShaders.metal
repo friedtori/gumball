@@ -105,13 +105,31 @@ static half4 mirroredSeamFeatherSample(SwiftUI::Layer layer, float2 position, fl
     return mirroredSeamFeatherSample(layer, float2(position.x + scrollOffset, position.y), layerWidth, seamFeatherWidth);
 }
 
+// Colour-only post-processing (saturation, contrast, brightness) with no spatial quantization.
+// Used by the Blur background style so it matches the slit-scan colour pipeline.
+[[ stitchable ]] half4 colorAdjust(
+    float2 position,
+    SwiftUI::Layer layer,
+    float postBlurSaturation,
+    float postBlurContrast,
+    float brightnessBoost
+) {
+    half4 c = layer.sample(position);
+    half3 rgb = c.rgb;
+    rgb = adjustSaturation(rgb, half(max(postBlurSaturation, 0.0f)));
+    rgb = adjustContrast(rgb, half(max(postBlurContrast, 0.0f)));
+    rgb = clamp(rgb * half(brightnessBoost), 0.0h, 1.0h);
+    return half4(rgb, c.a);
+}
+
 // Run after `scrollSample`: the source moves under fixed strips, giving a morphing slit-scan feel.
 [[ stitchable ]] half4 slitScan(
     float2 position,
     SwiftUI::Layer layer,
     float stripWidth,
     float postBlurSaturation,
-    float postBlurContrast
+    float postBlurContrast,
+    float brightnessBoost   // 1.0 = no change; 1.25 in light mode
 ) {
     float w = max(stripWidth, 1.0f);
     float satK = max(postBlurSaturation, 0.0f);
@@ -122,5 +140,6 @@ static half4 mirroredSeamFeatherSample(SwiftUI::Layer layer, float2 position, fl
     half3 rgb = c.rgb;
     rgb = adjustSaturation(rgb, half(satK));
     rgb = adjustContrast(rgb, half(conK));
+    rgb = clamp(rgb * half(brightnessBoost), 0.0h, 1.0h);
     return half4(rgb, c.a);
 }

@@ -24,7 +24,6 @@ private struct BackgroundOptionsView: View {
     @Environment(\.dismissWindow) private var dismissWindow
 
     @AppStorage(GumballOptionKeys.backgroundStyle) private var backgroundStyle = MenuBarBackgroundStyle.slitScan.rawValue
-    @AppStorage(GumballOptionKeys.backgroundOpacity) private var backgroundOpacity = 0.4
     @AppStorage(GumballOptionKeys.backgroundScrollDuration) private var backgroundScrollDuration = 30.0
     @AppStorage(GumballOptionKeys.keepPinnedPopoverVisible) private var keepPinnedPopoverVisible = false
 
@@ -37,20 +36,6 @@ private struct BackgroundOptionsView: View {
                     }
                 }
                 .pickerStyle(.segmented)
-
-                HStack {
-                    Text("Background opacity")
-                    Slider(value: $backgroundOpacity, in: 0...1, step: 0.01)
-                    Text(backgroundOpacity.formatted(.percent.precision(.fractionLength(0))))
-                        .monospacedDigit()
-                        .foregroundStyle(.secondary)
-                        .frame(width: 44, alignment: .trailing)
-                }
-
-                Button("Reset to 40%") {
-                    backgroundOpacity = 0.4
-                }
-                .buttonStyle(.link)
 
                 Picker("Background scroll speed", selection: $backgroundScrollDuration) {
                     Text("Static").tag(0.0)

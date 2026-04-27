@@ -4,7 +4,6 @@ import CoreImage
 
 enum GumballOptionKeys {
     static let backgroundStyle = "menuBarBackgroundStyle"
-    static let backgroundOpacity = "menuBarBackgroundOpacity"
     static let backgroundScrollDuration = "menuBarBackgroundScrollDuration"
     static let keepPinnedPopoverVisible = "keepPinnedPopoverVisible"
 }
@@ -46,12 +45,60 @@ private enum PlaybackController {
     static func previousTrack()   { _ = sendCommand?(5, nil) }
 }
 
+private struct RYMBadge: View {
+    private static let image: NSImage? = {
+        guard let url = Bundle.main.url(forResource: "rym-logo", withExtension: "svg") else {
+            return nil
+        }
+        return NSImage(contentsOf: url)
+    }()
+
+    var body: some View {
+        if let image = Self.image {
+            Image(nsImage: image)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 14, height: 14)
+        } else {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
+private struct AOTYBadge: View {
+    private static let image: NSImage? = {
+        guard let url = Bundle.main.url(forResource: "aoty-logo", withExtension: "svg") else {
+            return nil
+        }
+        let img = NSImage(contentsOf: url)
+        img?.isTemplate = true   // adaptive: dark in light mode, light in dark mode
+        return img
+    }()
+
+    var body: some View {
+        if let image = Self.image {
+            Image(nsImage: image)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 14, height: 14)
+        } else {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
 private struct LastFMBadge: View {
     private static let image: NSImage? = {
         guard let url = Bundle.main.url(forResource: "last-fm-logo-icon", withExtension: "svg") else {
             return nil
         }
-        return NSImage(contentsOf: url)
+        let img = NSImage(contentsOf: url)
+        img?.isTemplate = true   // renders in foreground color → dark in light mode, light in dark mode
+        return img
     }()
 
     var body: some View {
@@ -68,60 +115,104 @@ private struct LastFMBadge: View {
     }
 }
 
-private struct LastFMConnectedRow: View {
+/// Bottom-row Last.fm profile link (badge + "Last.fm connected" label).
+private struct LastFMProfileLink: View {
     let url: URL?
-    var extraURL: URL? = nil
     @State private var isHovering = false
-    @State private var isExtraHovering = false
 
     var body: some View {
-        HStack(spacing: 2) {
-            Button {
-                if let url {
-                    NSWorkspace.shared.open(url)
-                }
-            } label: {
-                Label {
-                    Text("Last.fm connected")
-                        .font(.system(size: 12))
-                        .foregroundStyle(isHovering && url != nil ? .primary : .secondary)
-                } icon: {
-                    LastFMBadge()
-                }
-                .padding(.horizontal, 4)
-                .padding(.vertical, 3)
-                .contentShape(RoundedRectangle(cornerRadius: 5))
+        Button {
+            if let url { NSWorkspace.shared.open(url) }
+        } label: {
+            Label {
+                Text("connected")
+                    .font(.system(size: 10, weight: .semibold).smallCaps())
+                    .foregroundStyle(isHovering && url != nil ? .primary : .secondary)
+            } icon: {
+                LastFMBadge()
+                    .opacity(isHovering ? 1.0 : 0.55)
             }
-            .buttonStyle(.plain)
-            .disabled(url == nil)
-            .background {
-                RoundedRectangle(cornerRadius: 5)
-                    .fill(isHovering && url != nil ? Color.secondary.opacity(0.12) : Color.clear)
-            }
-            .onHover { isHovering = $0 }
-            .help(url == nil ? "Last.fm username not available yet" : "Open Last.fm profile")
+            .padding(.horizontal, 4)
+            .padding(.vertical, 3)
+            .contentShape(RoundedRectangle(cornerRadius: 5))
+        }
+        .buttonStyle(.plain)
+        .disabled(url == nil)
+        .background {
+            RoundedRectangle(cornerRadius: 5)
+                .fill(isHovering && url != nil ? Color.secondary.opacity(0.12) : Color.clear)
+        }
+        .onHover { isHovering = $0 }
+        .help(url == nil ? "Last.fm username not available yet" : "Open Last.fm profile")
+    }
+}
 
-            if let extraURL {
-                Button {
-                    NSWorkspace.shared.open(extraURL)
+/// Middle row of external music-database links (RYM, AOTY, …).
+private struct ExternalLinksRow: View {
+    var rymURL: URL? = nil
+    var aotyURL: URL? = nil
+
+    var body: some View {
+        HStack(spacing: 4) {
+            if let rymURL {
+                ExternalLinkChip(url: rymURL, help: "Open on RateYourMusic") {
+                    RYMBadge()
                 } label: {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 11))
-                        .foregroundStyle(isExtraHovering ? .primary : .secondary)
-                        .frame(width: 16, height: 16)
-                        .padding(.horizontal, 3)
-                        .padding(.vertical, 3)
-                        .contentShape(RoundedRectangle(cornerRadius: 4))
+                    Text("RYM")
                 }
-                .buttonStyle(.plain)
-                .background {
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(isExtraHovering ? Color.secondary.opacity(0.12) : Color.clear)
+            }
+            if let aotyURL {
+                ExternalLinkChip(url: aotyURL, help: "Open on Album of the Year") {
+                    AOTYBadge()
+                } label: {
+                    Text("AOTY")
                 }
-                .onHover { isExtraHovering = $0 }
-                .help("Open on RateYourMusic")
             }
         }
+    }
+}
+
+private struct ExternalLinkChip<Icon: View, Label: View>: View {
+    let url: URL
+    let help: String
+    @ViewBuilder let icon: () -> Icon
+    @ViewBuilder let label: () -> Label
+    @State private var isHovering = false
+
+    var body: some View {
+        Button {
+            NSWorkspace.shared.open(url)
+        } label: {
+            HStack(spacing: 4) {
+                icon()
+                    .opacity(isHovering ? 1.0 : 0.7)
+                label()
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(isHovering ? .primary : .secondary)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .frame(minWidth: 72)
+        .background {
+            if #available(macOS 26.0, *) {
+                Capsule()
+                    .fill(.clear)
+                    .glassEffect(.regular.tint(.white.opacity(0.3)).interactive(), in: Capsule())
+                    .opacity(isHovering ? 1.0 : 0.85)
+            } else {
+                Capsule()
+                    .fill(Color.secondary.opacity(isHovering ? 0.18 : 0.1))
+            }
+        }
+        .overlay {
+            Capsule()
+                .strokeBorder(Color.white.opacity(0.25), lineWidth: 0.5)
+        }
+        .onHover { isHovering = $0 }
+        .help(help)
     }
 }
 
@@ -262,14 +353,18 @@ private struct PopoverHoverControlButton<Content: View>: View {
 
     @State private var isHovering = false
 
+    var iconSize: CGFloat = 18
+
     init(
         help: String,
         isEnabled: Bool = true,
+        iconSize: CGFloat = 18,
         action: @escaping () -> Void,
         @ViewBuilder content: @escaping (Bool) -> Content
     ) {
         self.help = help
         self.isEnabled = isEnabled
+        self.iconSize = iconSize
         self.action = action
         self.content = content
     }
@@ -277,7 +372,7 @@ private struct PopoverHoverControlButton<Content: View>: View {
     var body: some View {
         Button(action: action) {
             content(isHovering)
-                .frame(width: 18, height: 18, alignment: .center)
+                .frame(width: iconSize, height: iconSize, alignment: .center)
                 .frame(width: 34, height: 30)
                 .contentShape(RoundedRectangle(cornerRadius: 7))
         }
@@ -447,8 +542,11 @@ private enum SlitScanArtwork {
     /// Blur is applied to the art before the slit-scan shader (so ribbons see soft color columns).
     static let backgroundBlurRadius: CGFloat = 26
     /// Applied inside `slitScan` after the layer sample (post-blur), not via SwiftUI color filters.
-    static let backgroundPostBlurSaturation: Double = 1.55
-    static let backgroundPostBlurContrast: Double = 1.25
+    static let backgroundPostBlurSaturation: Double = 1.4
+    static let backgroundPostBlurContrast: Double = 1.2
+    /// Light mode needs a harder push to read through the bright glass chrome.
+    static let backgroundPostBlurSaturationLight: Double = 1.5
+    static let backgroundPostBlurContrastLight: Double = 1.3
     static let seamFeatherWidth: CGFloat = 16
     /// The moving layer invalidates SwiftUI; tie FPS to speed to keep slower motion cheap.
     static func scrollFramesPerSecond(duration: TimeInterval) -> TimeInterval {
@@ -576,6 +674,11 @@ private struct BlurredArtworkBackground: View {
     var scrollDuration: TimeInterval = 0
     var isPaused: Bool = false
 
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var effectiveSaturation: Float { colorScheme == .light ? Float(SlitScanArtwork.backgroundPostBlurSaturationLight) : Float(SlitScanArtwork.backgroundPostBlurSaturation) }
+    private var effectiveContrast: Float { colorScheme == .light ? Float(SlitScanArtwork.backgroundPostBlurContrastLight) : Float(SlitScanArtwork.backgroundPostBlurContrast) }
+
     var body: some View {
         ScrollOffsetTimeline(scrollDuration: scrollDuration, isPaused: isPaused) { offset, layerWidth in
             StaticArtworkLayer(image: image)
@@ -586,6 +689,14 @@ private struct BlurredArtworkBackground: View {
                         .float(Float(SlitScanArtwork.activeSeamFeatherWidth(forDuration: scrollDuration)))
                     ),
                     maxSampleOffset: SlitScanArtwork.scrollSampleOffset(layerWidth: layerWidth)
+                )
+                .layerEffect(
+                    ShaderLibrary.colorAdjust(
+                        .float(effectiveSaturation),
+                        .float(effectiveContrast),
+                        .float(1.0)
+                    ),
+                    maxSampleOffset: .zero
                 )
         }
     }
@@ -599,6 +710,13 @@ private struct SlitScannedArtwork: View {
     var postBlurContrast: Double = 1.0
     var scrollDuration: TimeInterval = 0
     var isPaused: Bool = false
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    /// -25% brightness in light mode to create contrast against the bright glass chrome.
+    private var brightnessBoost: Float { 1.0 }
+    private var effectiveSaturation: Float { colorScheme == .light ? Float(SlitScanArtwork.backgroundPostBlurSaturationLight) : Float(postBlurSaturation) }
+    private var effectiveContrast: Float { colorScheme == .light ? Float(SlitScanArtwork.backgroundPostBlurContrastLight) : Float(postBlurContrast) }
 
     var body: some View {
         ScrollOffsetTimeline(scrollDuration: scrollDuration, isPaused: isPaused) { offset, layerWidth in
@@ -614,8 +732,9 @@ private struct SlitScannedArtwork: View {
                 .layerEffect(
                     ShaderLibrary.slitScan(
                         .float(stripWidth),
-                        .float(Float(postBlurSaturation)),
-                        .float(Float(postBlurContrast))
+                        .float(effectiveSaturation),
+                        .float(effectiveContrast),
+                        .float(brightnessBoost)
                     ),
                     maxSampleOffset: SlitScanArtwork.slitScanSampleOffset(stripWidth: stripWidth)
                 )
@@ -628,7 +747,8 @@ struct GumballMenuBarCommands: View {
     @Environment(\.openWindow) private var openWindow
     @ObservedObject private var status = AppStatusBridge.shared
     @AppStorage(GumballOptionKeys.backgroundStyle) private var backgroundStyle = MenuBarBackgroundStyle.slitScan.rawValue
-    @AppStorage(GumballOptionKeys.backgroundOpacity) private var backgroundOpacity = 0.4
+    private let backgroundOpacityLight = 0.38
+    private let backgroundOpacityDark = 0.55
     @AppStorage(GumballOptionKeys.backgroundScrollDuration) private var backgroundScrollDuration = 30.0
     @State private var lastArtworkImage: NSImage?
     @State private var backgroundArtworkImage: NSImage?
@@ -640,10 +760,11 @@ struct GumballMenuBarCommands: View {
         VStack(alignment: .leading, spacing: 0) {
             nowPlayingSection
             controlsSection
-            Divider()
-                // 5% inset each side of the 280pt popover (90% line width), centered
-                .padding(.horizontal, 280 * 0.05)
-            statusSection
+            authStatusRow
+                .padding(.vertical, 8)
+                .padding(.leading, 94)
+                .padding(.trailing, 16)
+                .frame(maxWidth: .infinity, alignment: .leading)
             Divider()
                 .padding(.horizontal, 280 * 0.05)
             actionSection
@@ -653,6 +774,16 @@ struct GumballMenuBarCommands: View {
             albumArtBackground
         }
         .clipped()
+        .overlay {
+            // Inner glow — white stroke blurred inward for a lit-from-within rim effect.
+            // Only in light mode; dark mode's glass already provides sufficient depth.
+            if colorScheme == .light {
+                Rectangle()
+                    .stroke(Color.white.opacity(0.4), lineWidth: 12)
+                    .blur(radius: 8)
+                    .blendMode(.screen)
+            }
+        }
         .onReceive(status.$artworkImage) { image in
             handleArtworkTransition(to: image)
         }
@@ -665,6 +796,8 @@ struct GumballMenuBarCommands: View {
         }
     }
 
+    @Environment(\.colorScheme) private var colorScheme
+
     @ViewBuilder
     private var albumArtBackground: some View {
         if (MenuBarBackgroundStyle(rawValue: backgroundStyle) ?? .slitScan) != .none {
@@ -675,7 +808,7 @@ struct GumballMenuBarCommands: View {
                 }
                 if let img = backgroundArtworkImage {
                     albumArtBackgroundLayer(image: img)
-                        .opacity(backgroundOpacity)
+                        .opacity(colorScheme == .dark ? backgroundOpacityDark : backgroundOpacityLight)
                 }
             }
         }
@@ -709,7 +842,7 @@ struct GumballMenuBarCommands: View {
 
         if let backgroundArtworkImage {
             fadingArtworkImage = backgroundArtworkImage
-            fadingArtworkOpacity = backgroundOpacity
+            fadingArtworkOpacity = colorScheme == .dark ? backgroundOpacityDark : backgroundOpacityLight
             withAnimation(.easeInOut(duration: 0.7)) {
                 fadingArtworkOpacity = 0
             }
@@ -734,7 +867,10 @@ struct GumballMenuBarCommands: View {
         case (nil, nil):
             true
         case let (lhs?, rhs?):
-            lhs === rhs
+            // Reference equality fast path; fall back to data comparison so identical
+            // artwork arriving as new NSImage objects (--no-diff adapter) doesn't
+            // trigger a spurious crossfade on every play/pause event.
+            lhs === rhs || lhs.tiffRepresentation == rhs.tiffRepresentation
         default:
             false
         }
@@ -782,10 +918,9 @@ struct GumballMenuBarCommands: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.leading, 4)
         .frame(minHeight: 74)
-        .padding(.horizontal, 12)
-        .padding(.top, 12)
+        .padding(.horizontal, 16)
+        .padding(.top, 16)
         .padding(.bottom, 4)
     }
 
@@ -827,12 +962,12 @@ struct GumballMenuBarCommands: View {
                     .foregroundStyle(isHovering ? .primary : .secondary)
             }
 
-            PopoverHoverControlButton(help: "Play / Pause", action: {
+            PopoverHoverControlButton(help: "Play / Pause", iconSize: 26, action: {
                 PlaybackController.togglePlayPause()
             }) { isHovering in
                 Image(systemName: status.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 18))
-                    .foregroundStyle(isHovering ? .primary : .secondary)
+                    .font(.system(size: 22))
+                    .foregroundStyle(isHovering ? Color.primary : Color.primary.opacity(0.9))
             }
 
             PopoverHoverControlButton(help: "Next track", action: {
@@ -884,30 +1019,10 @@ struct GumballMenuBarCommands: View {
 
     // MARK: - Status
 
-    private var statusSection: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            authStatusRow
-            if status.pendingCount > 0 {
-                Label {
-                    Text("\(status.pendingCount) pending scrobble\(status.pendingCount == 1 ? "" : "s")")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                } icon: {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
-        .padding(.vertical, 8)
-        .padding(.leading, 86)
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
     @ViewBuilder
     private var authStatusRow: some View {
         if status.authStatus == .authorized {
-            LastFMConnectedRow(url: lastFMProfileURL, extraURL: rymAlbumURL)
+            ExternalLinksRow(rymURL: rymAlbumURL, aotyURL: aotyAlbumURL)
         } else {
             Label {
                 Text(status.authStatus.rawValue)
@@ -960,6 +1075,16 @@ struct GumballMenuBarCommands: View {
         return URL(string: "https://duckduckgo.com/?q=\(encoded)")
     }
 
+    private var aotyAlbumURL: URL? {
+        guard
+            let artist = status.trackArtist?.trimmingCharacters(in: .whitespacesAndNewlines), !artist.isEmpty,
+            let album = status.trackAlbum?.trimmingCharacters(in: .whitespacesAndNewlines), !album.isEmpty
+        else { return nil }
+        let query = "\\ site:albumoftheyear.org \"\(artist)\" \"\(album)\""
+        guard let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else { return nil }
+        return URL(string: "https://duckduckgo.com/?q=\(encoded)")
+    }
+
     private func lastFMPathComponent(_ value: String?) -> String? {
         guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
             return nil
@@ -992,6 +1117,9 @@ struct GumballMenuBarCommands: View {
 
     private var actionSection: some View {
         HStack(spacing: 14) {
+            if status.authStatus == .authorized {
+                LastFMProfileLink(url: lastFMProfileURL)
+            }
             Spacer()
             MenuIconActionButton(systemImage: "gearshape", help: "Options") {
                 NSApp.activate(ignoringOtherApps: true)
@@ -1004,7 +1132,7 @@ struct GumballMenuBarCommands: View {
             .keyboardShortcut("q", modifiers: .command)
         }
         .padding(.vertical, 8)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 16)
         .frame(maxWidth: .infinity, alignment: .trailing)
     }
 }
