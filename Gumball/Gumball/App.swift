@@ -7,10 +7,15 @@ struct GumballApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        Window("Scrobble queue (debug)", id: "queue-debug") {
-            DebugQueueView()
+        Window("Gumball Options", id: "options") {
+            OptionsWindowView()
         }
-        .defaultSize(width: 920, height: 480)
+        .defaultSize(width: 920, height: 520)
+
+        Window("Gumball Popover Debug", id: "popover-debug") {
+            PopoverDebugGlassView()
+        }
+        .defaultSize(width: 332, height: 300)
 
         MenuBarExtra("Gumball", systemImage: "opticaldisc") {
             GumballMenuBarCommands()
@@ -19,6 +24,40 @@ struct GumballApp: App {
 
         Settings {
             EmptyView()
+        }
+    }
+}
+
+private struct PopoverDebugGlassView: View {
+    private let cornerRadius: CGFloat = 22
+
+    var body: some View {
+        ZStack {
+            glassBackground
+
+            GumballMenuBarCommands()
+                .clipShape(RoundedRectangle(cornerRadius: cornerRadius - 4, style: .continuous))
+                .padding(10)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    @ViewBuilder
+    private var glassBackground: some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+
+        if #available(macOS 26.0, *) {
+            shape
+                .fill(.clear)
+                .glassEffect(.regular, in: shape)
+        } else {
+            shape
+                .fill(.regularMaterial)
+                .overlay {
+                    shape.stroke(.white.opacity(0.18), lineWidth: 1)
+                }
+                .shadow(color: .black.opacity(0.18), radius: 20, x: 0, y: 10)
         }
     }
 }
