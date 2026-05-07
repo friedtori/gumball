@@ -51,6 +51,14 @@ actor ScrobbleSourceFilter {
     }
 
     func isEligible(_ candidate: ScrobbleStateMachine.ScrobbleCandidate) async -> Bool {
+        if let bundleID = candidate.sourceBundleID {
+            let blocked = await MainActor.run { AppScrobbleRules.shared.isBlocked(bundleID) }
+            if blocked {
+                log.info("Source blocked by user rule: \(bundleID, privacy: .public)")
+                return false
+            }
+        }
+
         guard let bundleID = candidate.sourceBundleID,
               Self.mixedContentSources.contains(bundleID) else {
             // Pure music app or unknown source: trust it.

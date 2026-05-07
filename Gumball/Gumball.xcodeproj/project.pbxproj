@@ -27,6 +27,7 @@
 		8A0D8F3B2C7E000100000003 /* aoty-logo.svg in Resources */ = {isa = PBXBuildFile; fileRef = 8A0D8F3C2C7E000100000003 /* aoty-logo.svg */; };
 		8A0D8F3E2C7E000100000001 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F3D2C7E000100000001 /* MenuBarView.swift */; };
 		8A0D8F402C7E000100000001 /* ScrobbleSourceFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F3F2C7E000100000001 /* ScrobbleSourceFilter.swift */; };
+		8A0D8F462C7E000100000001 /* AppScrobbleRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F472C7E000100000001 /* AppScrobbleRules.swift */; };
 		8A0D8F422C7E000100000001 /* LastFMLoveService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F412C7E000100000001 /* LastFMLoveService.swift */; };
 		8A0D8F432C7E000100000001 /* SlitScanShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F432C7E000100000002 /* SlitScanShaders.metal */; };
 		8A0D8F442C7E000100000001 /* Design.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F452C7E000100000001 /* Design.swift */; };
@@ -55,6 +56,7 @@
 		8A0D8F3C2C7E000100000003 /* aoty-logo.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = "aoty-logo.svg"; sourceTree = "<group>"; };
 		8A0D8F3D2C7E000100000001 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
 		8A0D8F3F2C7E000100000001 /* ScrobbleSourceFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrobbleSourceFilter.swift; sourceTree = "<group>"; };
+		8A0D8F472C7E000100000001 /* AppScrobbleRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppScrobbleRules.swift; sourceTree = "<group>"; };
 		8A0D8F412C7E000100000001 /* LastFMLoveService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastFMLoveService.swift; sourceTree = "<group>"; };
 		8A0D8F432C7E000100000002 /* SlitScanShaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = SlitScanShaders.metal; sourceTree = "<group>"; };
 		8A0D8F452C7E000100000001 /* Design.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Design.swift; sourceTree = "<group>"; };
@@ -140,6 +142,7 @@
 				8A0D8F272C7E000100000001 /* ScrobbleQueue.swift */,
 				8A0D8F332C7E000100000001 /* ScrobbleFlushService.swift */,
 				8A0D8F3F2C7E000100000001 /* ScrobbleSourceFilter.swift */,
+				8A0D8F472C7E000100000001 /* AppScrobbleRules.swift */,
 			);
 			path = Scrobble;
 			sourceTree = "<group>";
@@ -260,6 +263,7 @@
 				8A0D8F302C7E000100000001 /* LastFMTrackScrobble.swift in Sources */,
 				8A0D8F322C7E000100000001 /* ScrobbleFlushService.swift in Sources */,
 				8A0D8F402C7E000100000001 /* ScrobbleSourceFilter.swift in Sources */,
+				8A0D8F462C7E000100000001 /* AppScrobbleRules.swift in Sources */,
 				8A0D8F362C7E000100000001 /* TrackHistoryBridge.swift in Sources */,
 				8A0D8F442C7E000100000001 /* Design.swift in Sources */,
 				8A0D8F382C7E000100000001 /* OptionsWindow.swift in Sources */,

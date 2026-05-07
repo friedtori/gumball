@@ -9,6 +9,11 @@ struct OptionsWindowView: View {
                     Label("Options", systemImage: "slider.horizontal.3")
                 }
 
+            AppSourcesView()
+                .tabItem {
+                    Label("Apps", systemImage: "square.stack.3d.up")
+                }
+
             TrackHistoryView()
                 .tabItem {
                     Label("Track History", systemImage: "clock.arrow.circlepath")
@@ -82,6 +87,56 @@ private struct BackgroundOptionsView: View {
         } else {
             dismissWindow(id: "popover-debug")
         }
+    }
+}
+
+struct AppSourcesView: View {
+    @ObservedObject private var rules = AppScrobbleRules.shared
+
+    private var musicApps:     [KnownApp] { AppScrobbleRules.catalog.filter { $0.category == .music } }
+    private var streamingApps: [KnownApp] { AppScrobbleRules.catalog.filter { $0.category == .streaming } }
+    private var browserApps:   [KnownApp] { AppScrobbleRules.catalog.filter { $0.category == .browser } }
+
+    var body: some View {
+        List {
+            appSection("Music Apps", apps: musicApps)
+            appSection("Streaming", apps: streamingApps)
+            appSection("Browsers", apps: browserApps)
+        }
+        .listStyle(.inset(alternatesRowBackgrounds: true))
+    }
+
+    @ViewBuilder
+    private func appSection(_ title: String, apps: [KnownApp]) -> some View {
+        Section(title) {
+            ForEach(apps) { app in
+                AppSourceRow(app: app, rules: rules)
+            }
+        }
+    }
+}
+
+private struct AppSourceRow: View {
+    let app: KnownApp
+    @ObservedObject var rules: AppScrobbleRules
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(app.name)
+                Text(app.category.defaultBehaviorLabel)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Toggle("", isOn: Binding(
+                get: { !rules.isBlocked(app.id) },
+                set: { rules.setEnabled($0, for: app.id) }
+            ))
+            .toggleStyle(.switch)
+            .labelsHidden()
+        }
+        .padding(.vertical, 2)
     }
 }
 
