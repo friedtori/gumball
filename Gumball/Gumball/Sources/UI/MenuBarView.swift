@@ -627,39 +627,39 @@ struct GumballMenuBarCommands: View {
                         .opacity(colorScheme == .dark ? backgroundOpacityDark : backgroundOpacityLight)
                 }
             }
+            .visualEffect { content, geometry in
+                content.layerEffect(
+                    ShaderLibrary.cornerVignetteBlur(
+                        .float2(geometry.size),
+                        .float(56),
+                        .float(18)
+                    ),
+                    maxSampleOffset: CGSize(width: 18, height: 18)
+                )
+            }
         }
     }
 
     @ViewBuilder
     private func albumArtBackgroundLayer(image: NSImage) -> some View {
-        let layer: AnyView = switch MenuBarBackgroundStyle(rawValue: backgroundStyle) ?? .slitScan {
+        switch MenuBarBackgroundStyle(rawValue: backgroundStyle) ?? .slitScan {
         case .blur:
-            AnyView(BlurredArtworkBackground(
+            BlurredArtworkBackground(
                 image: image,
                 scrollDuration: backgroundScrollDuration,
                 isPaused: !status.isPlaying || !isVisible
-            ))
+            )
         case .slitScan:
-            AnyView(SlitScannedArtwork(
+            SlitScannedArtwork(
                 image: image,
                 stripWidth: SlitScanArtwork.backgroundStripWidth,
                 postBlurSaturation: SlitScanArtwork.backgroundPostBlurSaturation,
                 postBlurContrast: SlitScanArtwork.backgroundPostBlurContrast,
                 scrollDuration: backgroundScrollDuration,
                 isPaused: !status.isPlaying || !isVisible
-            ))
-        case .none:
-            AnyView(EmptyView())
-        }
-        layer.visualEffect { content, geometry in
-            content.layerEffect(
-                ShaderLibrary.cornerVignetteBlur(
-                    .float2(geometry.size),
-                    .float(56),
-                    .float(18)
-                ),
-                maxSampleOffset: CGSize(width: 18, height: 18)
             )
+        case .none:
+            EmptyView()
         }
     }
 
