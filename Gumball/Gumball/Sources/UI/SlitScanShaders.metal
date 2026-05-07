@@ -71,6 +71,37 @@ static half3 colorAdjust(half3 rgb, float saturation, float contrast, float brig
     return half4(colorAdjust(c.rgb, saturation, contrast, brightness), c.a);
 }
 
+// Progressive Gaussian blur that activates only at corners.
+// blurStart: pixel radius from each corner edge where blur begins fading in.
+// maxRadius: blur radius (px) at the very corner.
+[[ stitchable ]] half4 cornerVignetteBlur(
+    float2 pos,
+    SwiftUI::Layer layer,
+    float2 size,
+    float blurStart,
+    float maxRadius
+) {
+    float2 edgeDist = min(pos, size - pos);
+    float cx = 1.0f - saturate(edgeDist.x / max(blurStart, 1.0f));
+    float cy = 1.0f - saturate(edgeDist.y / max(blurStart, 1.0f));
+    float radius = cx * cy * maxRadius;
+
+    if (radius < 0.5f) return layer.sample(pos);
+
+    half4 color = half4(0);
+    float total = 0.0f;
+    const int N = 5;
+    for (int x = -N; x <= N; x++) {
+        for (int y = -N; y <= N; y++) {
+            float2 off = float2(x, y) * (radius / float(N));
+            float w = exp(-float(x * x + y * y) / float(N * N));
+            color += layer.sample(pos + off) * half(w);
+            total += w;
+        }
+    }
+    return color / half(total);
+}
+
 // Single-pass blur background: scroll + mirror + colour (no strip quantization).
 [[ stitchable ]] half4 scrollAndColorAdjust(
     float2 position,

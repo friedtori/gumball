@@ -632,24 +632,34 @@ struct GumballMenuBarCommands: View {
 
     @ViewBuilder
     private func albumArtBackgroundLayer(image: NSImage) -> some View {
-        switch MenuBarBackgroundStyle(rawValue: backgroundStyle) ?? .slitScan {
+        let layer: AnyView = switch MenuBarBackgroundStyle(rawValue: backgroundStyle) ?? .slitScan {
         case .blur:
-            BlurredArtworkBackground(
+            AnyView(BlurredArtworkBackground(
                 image: image,
                 scrollDuration: backgroundScrollDuration,
                 isPaused: !status.isPlaying || !isVisible
-            )
+            ))
         case .slitScan:
-            SlitScannedArtwork(
+            AnyView(SlitScannedArtwork(
                 image: image,
                 stripWidth: SlitScanArtwork.backgroundStripWidth,
                 postBlurSaturation: SlitScanArtwork.backgroundPostBlurSaturation,
                 postBlurContrast: SlitScanArtwork.backgroundPostBlurContrast,
                 scrollDuration: backgroundScrollDuration,
                 isPaused: !status.isPlaying || !isVisible
-            )
+            ))
         case .none:
-            EmptyView()
+            AnyView(EmptyView())
+        }
+        layer.visualEffect { content, geometry in
+            content.layerEffect(
+                ShaderLibrary.cornerVignetteBlur(
+                    .float2(geometry.size),
+                    .float(56),
+                    .float(18)
+                ),
+                maxSampleOffset: CGSize(width: 18, height: 18)
+            )
         }
     }
 
