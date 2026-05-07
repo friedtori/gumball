@@ -185,6 +185,7 @@ private struct ExternalLinkChip<Icon: View, Label: View>: View {
                 .strokeBorder(.white.opacity(0.55), lineWidth: 1)
                 .blendMode(.overlay)
         }
+        .shadow(color: .black.opacity(0.10), radius: 4, x: 0, y: 1)
         .onHover { isHovering = $0 }
         .help(help)
     }
