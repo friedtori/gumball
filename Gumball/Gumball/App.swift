@@ -29,36 +29,10 @@ struct GumballApp: App {
 }
 
 private struct PopoverDebugGlassView: View {
-    private let cornerRadius: CGFloat = 22
-
     var body: some View {
-        ZStack {
-            glassBackground
-
-            GumballMenuBarCommands()
-                .clipShape(RoundedRectangle(cornerRadius: cornerRadius - 4, style: .continuous))
-                .padding(10)
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    @ViewBuilder
-    private var glassBackground: some View {
-        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-
-        if #available(macOS 26.0, *) {
-            shape
-                .fill(.clear)
-                .glassEffect(.regular, in: shape)
-        } else {
-            shape
-                .fill(.regularMaterial)
-                .overlay {
-                    shape.stroke(.white.opacity(0.18), lineWidth: 1)
-                }
-                .shadow(color: .black.opacity(0.18), radius: 20, x: 0, y: 10)
-        }
+        GumballMenuBarCommands()
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .background(.regularMaterial)
     }
 }
 
