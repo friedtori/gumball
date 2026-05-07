@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 70;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -22,7 +22,6 @@
 		8A0D8F322C7E000100000001 /* ScrobbleFlushService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F332C7E000100000001 /* ScrobbleFlushService.swift */; };
 		8A0D8F362C7E000100000001 /* QueueDebugBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F372C7E000100000001 /* QueueDebugBridge.swift */; };
 		8A0D8F382C7E000100000001 /* OptionsWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F392C7E000100000001 /* OptionsWindow.swift */; };
-		8A0D8F442C7E000100000001 /* Design.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F452C7E000100000001 /* Design.swift */; };
 		8A0D8F3B2C7E000100000001 /* last-fm-logo-icon.svg in Resources */ = {isa = PBXBuildFile; fileRef = 8A0D8F3C2C7E000100000001 /* last-fm-logo-icon.svg */; };
 		8A0D8F3B2C7E000100000002 /* rym-logo.svg in Resources */ = {isa = PBXBuildFile; fileRef = 8A0D8F3C2C7E000100000002 /* rym-logo.svg */; };
 		8A0D8F3B2C7E000100000003 /* aoty-logo.svg in Resources */ = {isa = PBXBuildFile; fileRef = 8A0D8F3C2C7E000100000003 /* aoty-logo.svg */; };
@@ -30,6 +29,7 @@
 		8A0D8F402C7E000100000001 /* ScrobbleSourceFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F3F2C7E000100000001 /* ScrobbleSourceFilter.swift */; };
 		8A0D8F422C7E000100000001 /* LastFMLoveService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F412C7E000100000001 /* LastFMLoveService.swift */; };
 		8A0D8F432C7E000100000001 /* SlitScanShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F432C7E000100000002 /* SlitScanShaders.metal */; };
+		8A0D8F442C7E000100000001 /* Design.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F452C7E000100000001 /* Design.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -50,7 +50,6 @@
 		8A0D8F332C7E000100000001 /* ScrobbleFlushService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrobbleFlushService.swift; sourceTree = "<group>"; };
 		8A0D8F372C7E000100000001 /* QueueDebugBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueueDebugBridge.swift; sourceTree = "<group>"; };
 		8A0D8F392C7E000100000001 /* OptionsWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptionsWindow.swift; sourceTree = "<group>"; };
-		8A0D8F452C7E000100000001 /* Design.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Design.swift; sourceTree = "<group>"; };
 		8A0D8F3C2C7E000100000001 /* last-fm-logo-icon.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = "last-fm-logo-icon.svg"; sourceTree = "<group>"; };
 		8A0D8F3C2C7E000100000002 /* rym-logo.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = "rym-logo.svg"; sourceTree = "<group>"; };
 		8A0D8F3C2C7E000100000003 /* aoty-logo.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = "aoty-logo.svg"; sourceTree = "<group>"; };
@@ -58,11 +57,8 @@
 		8A0D8F3F2C7E000100000001 /* ScrobbleSourceFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrobbleSourceFilter.swift; sourceTree = "<group>"; };
 		8A0D8F412C7E000100000001 /* LastFMLoveService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastFMLoveService.swift; sourceTree = "<group>"; };
 		8A0D8F432C7E000100000002 /* SlitScanShaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = SlitScanShaders.metal; sourceTree = "<group>"; };
+		8A0D8F452C7E000100000001 /* Design.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Design.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
-
-/* Begin PBXFileSystemSynchronizedRootGroup section */
-		169B968E2F9F5B57008F03EC /* GumballR */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = GumballR; sourceTree = "<group>"; };
-/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		8A0D8F0F2C7E000100000001 /* Frameworks */ = {
@@ -79,7 +75,6 @@
 			isa = PBXGroup;
 			children = (
 				8A0D8F142C7E000100000001 /* Gumball */,
-				169B968E2F9F5B57008F03EC /* GumballR */,
 				8A0D8F132C7E000100000001 /* Products */,
 			);
 			sourceTree = "<group>";
