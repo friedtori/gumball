@@ -93,26 +93,21 @@ private struct BackgroundOptionsView: View {
 struct AppSourcesView: View {
     @ObservedObject private var rules = AppScrobbleRules.shared
 
-    private var musicApps:     [KnownApp] { AppScrobbleRules.catalog.filter { $0.category == .music } }
-    private var streamingApps: [KnownApp] { AppScrobbleRules.catalog.filter { $0.category == .streaming } }
-    private var browserApps:   [KnownApp] { AppScrobbleRules.catalog.filter { $0.category == .browser } }
+    private func apps(for category: KnownApp.Category) -> [KnownApp] {
+        AppScrobbleRules.catalog.filter { $0.category == category }
+    }
 
     var body: some View {
         List {
-            appSection("Music Apps", apps: musicApps)
-            appSection("Streaming", apps: streamingApps)
-            appSection("Browsers", apps: browserApps)
-        }
-        .listStyle(.inset(alternatesRowBackgrounds: true))
-    }
-
-    @ViewBuilder
-    private func appSection(_ title: String, apps: [KnownApp]) -> some View {
-        Section(title) {
-            ForEach(apps) { app in
-                AppSourceRow(app: app, rules: rules)
+            ForEach([KnownApp.Category.musicPlayer, .browser, .videoPlayer], id: \.rawValue) { category in
+                Section(category.label) {
+                    ForEach(apps(for: category)) { app in
+                        AppSourceRow(app: app, rules: rules)
+                    }
+                }
             }
         }
+        .listStyle(.inset(alternatesRowBackgrounds: true))
     }
 }
 
@@ -123,8 +118,18 @@ private struct AppSourceRow: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(app.name)
-                Text(app.category.defaultBehaviorLabel)
+                HStack(spacing: 6) {
+                    Text(app.name)
+                    if app.nativeLastFM {
+                        Text("LAST.FM")
+                            .font(.system(size: 8, weight: .semibold).smallCaps())
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 2)
+                            .background(Capsule().fill(Color.secondary.opacity(0.12)))
+                    }
+                }
+                Text(app.behaviorNote)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
