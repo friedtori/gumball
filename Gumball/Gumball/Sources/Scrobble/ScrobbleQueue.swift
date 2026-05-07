@@ -113,8 +113,8 @@ actor ScrobbleQueue {
         return rows
     }
 
-    /// Recent rows of any status (newest first). For debug UI only.
-    func fetchRecentForDebug(limit: Int = 150) throws -> [Row] {
+    /// Recent rows of any status, newest first.
+    func fetchRecent(limit: Int = 150) throws -> [Row] {
         let sql = """
         SELECT id, status, artist, track, album, duration, started_at, played_seconds, attempts, last_error, created_at
         FROM scrobble_queue

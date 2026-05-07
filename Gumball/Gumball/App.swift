@@ -134,9 +134,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 let pending = (try? await q.countPending()) ?? -1
                 self.log.info("ScrobbleQueue ready (pending=\(pending, privacy: .public))")
                 await MainActor.run {
-                    QueueDebugBridge.shared.attachQueue(q)
+                    TrackHistoryBridge.shared.attachQueue(q)
                 }
-                await QueueDebugBridge.shared.refresh()
+                await TrackHistoryBridge.shared.refresh()
             } catch {
                 self.log.error("ScrobbleQueue init failed: \(String(describing: error), privacy: .public)")
             }
@@ -242,7 +242,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func triggerFlush() async {
         guard let flusher = scrobbleFlusher, let queue = queue else { return }
         await flusher.flushIfPossible(queue: queue)
-        await QueueDebugBridge.shared.refresh()
+        await TrackHistoryBridge.shared.refresh()
     }
 
     private func updateNowPlaying(_ ping: ScrobbleStateMachine.NowPlayingPing) async {
@@ -268,13 +268,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let queue else { return }
         do {
             _ = try await queue.enqueue(scrobble)
-            await QueueDebugBridge.shared.refresh()
+            await TrackHistoryBridge.shared.refresh()
         } catch {
             log.error("enqueue failed: \(String(describing: error), privacy: .public)")
             return
         }
         await triggerFlush()
-        await QueueDebugBridge.shared.refresh()
+        await TrackHistoryBridge.shared.refresh()
     }
 
     private static func cleanedEnvCredential(_ value: String) -> String? {
@@ -299,10 +299,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         if Thread.isMainThread {
-            QueueDebugBridge.shared.detachQueue()
+            TrackHistoryBridge.shared.detachQueue()
         } else {
             DispatchQueue.main.sync {
-                QueueDebugBridge.shared.detachQueue()
+                TrackHistoryBridge.shared.detachQueue()
             }
         }
         task?.cancel()

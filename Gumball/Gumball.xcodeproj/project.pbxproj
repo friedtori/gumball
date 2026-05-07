@@ -20,7 +20,7 @@
 		8A0D8F2A2C7E000100000001 /* LastFMAuthCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F2B2C7E000100000001 /* LastFMAuthCoordinator.swift */; };
 		8A0D8F302C7E000100000001 /* LastFMTrackScrobble.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F312C7E000100000001 /* LastFMTrackScrobble.swift */; };
 		8A0D8F322C7E000100000001 /* ScrobbleFlushService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F332C7E000100000001 /* ScrobbleFlushService.swift */; };
-		8A0D8F362C7E000100000001 /* QueueDebugBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F372C7E000100000001 /* QueueDebugBridge.swift */; };
+		8A0D8F362C7E000100000001 /* TrackHistoryBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F372C7E000100000001 /* TrackHistoryBridge.swift */; };
 		8A0D8F382C7E000100000001 /* OptionsWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D8F392C7E000100000001 /* OptionsWindow.swift */; };
 		8A0D8F3B2C7E000100000001 /* last-fm-logo-icon.svg in Resources */ = {isa = PBXBuildFile; fileRef = 8A0D8F3C2C7E000100000001 /* last-fm-logo-icon.svg */; };
 		8A0D8F3B2C7E000100000002 /* rym-logo.svg in Resources */ = {isa = PBXBuildFile; fileRef = 8A0D8F3C2C7E000100000002 /* rym-logo.svg */; };
@@ -48,7 +48,7 @@
 		8A0D8F2B2C7E000100000001 /* LastFMAuthCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastFMAuthCoordinator.swift; sourceTree = "<group>"; };
 		8A0D8F312C7E000100000001 /* LastFMTrackScrobble.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastFMTrackScrobble.swift; sourceTree = "<group>"; };
 		8A0D8F332C7E000100000001 /* ScrobbleFlushService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrobbleFlushService.swift; sourceTree = "<group>"; };
-		8A0D8F372C7E000100000001 /* QueueDebugBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueueDebugBridge.swift; sourceTree = "<group>"; };
+		8A0D8F372C7E000100000001 /* TrackHistoryBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackHistoryBridge.swift; sourceTree = "<group>"; };
 		8A0D8F392C7E000100000001 /* OptionsWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptionsWindow.swift; sourceTree = "<group>"; };
 		8A0D8F3C2C7E000100000001 /* last-fm-logo-icon.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = "last-fm-logo-icon.svg"; sourceTree = "<group>"; };
 		8A0D8F3C2C7E000100000002 /* rym-logo.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = "rym-logo.svg"; sourceTree = "<group>"; };
@@ -165,7 +165,7 @@
 		8A0D8F3A2C7E000100000001 /* UI */ = {
 			isa = PBXGroup;
 			children = (
-				8A0D8F372C7E000100000001 /* QueueDebugBridge.swift */,
+				8A0D8F372C7E000100000001 /* TrackHistoryBridge.swift */,
 				8A0D8F452C7E000100000001 /* Design.swift */,
 				8A0D8F392C7E000100000001 /* OptionsWindow.swift */,
 				8A0D8F3D2C7E000100000001 /* MenuBarView.swift */,
@@ -260,7 +260,7 @@
 				8A0D8F302C7E000100000001 /* LastFMTrackScrobble.swift in Sources */,
 				8A0D8F322C7E000100000001 /* ScrobbleFlushService.swift in Sources */,
 				8A0D8F402C7E000100000001 /* ScrobbleSourceFilter.swift in Sources */,
-				8A0D8F362C7E000100000001 /* QueueDebugBridge.swift in Sources */,
+				8A0D8F362C7E000100000001 /* TrackHistoryBridge.swift in Sources */,
 				8A0D8F442C7E000100000001 /* Design.swift in Sources */,
 				8A0D8F382C7E000100000001 /* OptionsWindow.swift in Sources */,
 				8A0D8F3E2C7E000100000001 /* MenuBarView.swift in Sources */,

@@ -33,10 +33,9 @@ final class AppStatusBridge: ObservableObject {
     private init() {}
 }
 
-/// Bridges the shared `ScrobbleQueue` actor into SwiftUI for the temporary debug window.
 @MainActor
-final class QueueDebugBridge: ObservableObject {
-    static let shared = QueueDebugBridge()
+final class TrackHistoryBridge: ObservableObject {
+    static let shared = TrackHistoryBridge()
 
     private(set) var queue: ScrobbleQueue?
     @Published private(set) var rows: [ScrobbleQueue.Row] = []
@@ -59,7 +58,7 @@ final class QueueDebugBridge: ObservableObject {
             return
         }
         do {
-            rows = try await queue.fetchRecentForDebug(limit: 200)
+            rows = try await queue.fetchRecent(limit: 200)
             AppStatusBridge.shared.pendingCount = (try? await queue.countPending()) ?? 0
         } catch {
             rows = []

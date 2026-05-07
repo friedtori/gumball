@@ -9,7 +9,7 @@ struct OptionsWindowView: View {
                     Label("Options", systemImage: "slider.horizontal.3")
                 }
 
-            DebugQueueView()
+            TrackHistoryView()
                 .tabItem {
                     Label("Track History", systemImage: "clock.arrow.circlepath")
                 }
@@ -85,14 +85,13 @@ private struct BackgroundOptionsView: View {
     }
 }
 
-/// Temporary debug window: live-ish view of `scrobble_queue` rows.
-struct DebugQueueView: View {
-    @ObservedObject private var bridge = QueueDebugBridge.shared
+struct TrackHistoryView: View {
+    @ObservedObject private var bridge = TrackHistoryBridge.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Scrobble queue (debug)")
+                Text("Track History")
                     .font(.headline)
                 Spacer()
                 Button("Refresh") {
@@ -100,39 +99,20 @@ struct DebugQueueView: View {
                 }
                 .keyboardShortcut("r", modifiers: .command)
             }
-            Text("SQLite: ~/Library/Application Support/Gumball/gumball.sqlite3")
-                .font(.caption)
-                .foregroundStyle(.secondary)
 
             Table(bridge.rows) {
-                TableColumn("id") { Text("\($0.id)") }
-                    .width(min: 36, ideal: 44)
-                TableColumn("status") { Text($0.status) }
-                    .width(min: 70, ideal: 90)
-                TableColumn("artist") { Text($0.artist).lineLimit(1) }
-                TableColumn("track") { Text($0.track).lineLimit(1) }
-                TableColumn("album") { Text($0.album ?? "—").lineLimit(1) }
-                TableColumn("dur") {
-                    Text($0.duration.map { String(format: "%.0f", $0) } ?? "—")
+                TableColumn("Status") { row in
+                    Text(row.status.scrobbleStatusLabel)
+                        .foregroundStyle(row.status.scrobbleStatusColor)
                 }
-                .width(min: 40, ideal: 48)
-                TableColumn("started") {
+                .width(min: 80, ideal: 90)
+                TableColumn("Artist") { Text($0.artist).lineLimit(1) }
+                TableColumn("Track") { Text($0.track).lineLimit(1) }
+                TableColumn("Album") { Text($0.album ?? "—").lineLimit(1) }
+                TableColumn("Date") {
                     Text($0.startedAt.formatted(date: .abbreviated, time: .shortened))
                 }
-                .width(min: 120, ideal: 140)
-                TableColumn("played") {
-                    Text(String(format: "%.0fs", $0.playedSeconds))
-                }
-                .width(min: 52, ideal: 60)
-                TableColumn("att") {
-                    Text("\($0.attempts)")
-                }
-                .width(min: 32, ideal: 36)
-                TableColumn("last error") {
-                    Text($0.lastError ?? "—")
-                        .font(.caption)
-                        .lineLimit(2)
-                }
+                .width(min: 130, ideal: 150)
             }
         }
         .padding()
@@ -142,6 +122,25 @@ struct DebugQueueView: View {
         }
         .onReceive(Timer.publish(every: 3, on: .main, in: .common).autoconnect()) { _ in
             Task { await bridge.refresh() }
+        }
+    }
+}
+
+private extension String {
+    var scrobbleStatusLabel: String {
+        switch self {
+        case "pending": return "Pending"
+        case "sent": return "Scrobbled"
+        case "permanently_failed": return "Failed"
+        default: return self
+        }
+    }
+
+    var scrobbleStatusColor: Color {
+        switch self {
+        case "sent": return .secondary
+        case "permanently_failed": return .red
+        default: return .primary
         }
     }
 }
